@@ -1,0 +1,31 @@
+{
+  "name": "d3-hiervis",
+  "version": "0.0.1",
+  "description": "{DESCRIPTION}",
+  "keywords": [
+    "d3",
+    "d3-module"
+  ],
+  "license": "BSD-3-Clause",
+  "main": "build/d3-hiervis.js",
+  "jsnext:main": "index",
+  "homepage": "https://github.com/fbreitwieser/d3-hiervis",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fbreitwieser/d3-hiervis.git"
+  },
+  "scripts": {
+    "pretest": "rm -rf build && mkdir build && rollup -f umd -n d3 -o build/d3-hiervis.js -- index.js",
+    "test": "tape 'test/**/*-test.js'",
+    "prepublish": "npm run test && uglifyjs build/d3-hiervis.js -c -m -o build/d3-hiervis.min.js",
+    "postpublish": "zip -j build/d3-hiervis.zip -- LICENSE README.md build/d3-hiervis.js build/d3-hiervis.min.js"
+  },
+  "devDependencies": {
+    "rollup": "0.27",
+    "tape": "4",
+    "uglify-js": "2"
+  },
+  "dependencies": {
+    "d3-hierarchy": "^1.1.8"
+  }
+}

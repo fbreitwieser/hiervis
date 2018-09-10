@@ -1,0 +1,10 @@
+Package: hiervis
+Title: Hierarchical visualizations for R/Shiny
+Version: 0.0.0.9000
+Authors@R: person("Florian P", "Breitwieser", email = "florian.bw@gmail.com", role = c("aut", "cre"))
+Description: What the package does (one paragraph).
+Depends: R (>= 3.4.1)
+Imports: shiny, d3r
+License: What license is it under?
+Encoding: UTF-8
+LazyData: true

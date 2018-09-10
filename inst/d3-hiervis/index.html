@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<script src="src/d3.v4.min.js"></script>
+<script src="src/hiervis.js"></script> 
+<script src="src/TreeColors.js"></script> 
+<!--<script src="sankey_partition.js"></script>--> 
+<link rel="stylesheet" href="style.css">
+
+<div id='drop-area'>
+    <form class="my-form">
+        <p>Upload multiple files with the file dialog or by dragging and dropping report files onto the dashed region.</p>
+        <input type="file" id="fileElem" multiple accept="*" onchange="handleFiles(this.files)" />
+        <label class="button" for="fileElem">Select some files</label>
+    </form>
+    <div id='gallery'></div>
+</div>
+Filter: <input type="text" name="filter" id="filter" oninput="filterChanged(this.value)" />
+<svg id="h1" width="100%" height="800"> </svg>
+<button class="vis">sankey</button>
+<button class="vis">partition</button>
+<button class="vis">icicle</button>
+<button class="vis">sunburst</button>
+<button class="vis">treemap</button>
+<button class="vis">vertical sankey</button>
+<button class="vis">tree</button>
+<button class="vis">cluster</button>
+<form>
+    <label>text separator:</label><input type="text" name="textSep" value=","/>
+    <label>pathSep:</label><input type="text" name="pathSep" value="/"/> 
+    <label>pathField:</label><input type="text" name="pathField" value="path"/>
+    <label>valueField:</label><input type="text" name="valueField" value="size"/>
+    <input type="file" id="fileInput" onchange="uploadFiles(this.files)" />
+</form>
+<script>
+    function filterChanged(txt) {
+        chart.filter(txt);
+    }
+    let dropArea = document.getElementById('drop-area');
+    
+    ;['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, eventHandler, false);
+    })
+    
+    function eventHandler(e) {
+        if (e.type === 'dragenter' || e.type === 'dragover') {
+            dropArea.classList.add('highlight');
+        } else {
+            dropArea.classList.remove('highlight');
+        }
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    dropArea.addEventListener('drop', handleDrop, false);
+    
+    function handleDrop(e) {
+        let dt = e.dataTransfer;
+        let files = dt.files;
+        handleFiles(files);
+        
+    }
+    
+    function handleFiles(files) {
+        files = [...files]
+        files.forEach(previewFile);
+    }
+        
+    function previewFile(file) {
+        let reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onloadend = function() {
+/*            let img = document.createElement('img');
+            img.src = reader.result;
+            document.getElementById('gallery').appendChild(img);
+            */
+        d3.tsv(reader.result, function(error, data) {
+			 chart = hiervis(d3.select("svg#h1"), data, {
+            krakenFile: true, 
+            treeColors: null});
+        chart.draw("vertical sankey");
+     });
+    }
+    }
+    
+  d3.selectAll('button.vis').on('click', function(){
+    const vis = d3.select(this).text();
+    chart.draw(vis);
+  });
+
+  d3.csv("data/d3.csv", function(error, data) {
+    chart = hiervis(d3.select("svg#h1"), data, {valueField: "size", stat: "sum", pathField: "path", pathSep: "/"});
+    chart.draw("vertical sankey");
+  });
+
+  function uploadFiles(files) {
+      console.log(files[0]);
+    
+    d3.tsv(files[0], function(error, data) {
+        chart = hiervis(d3.select("svg#h1"), data, {
+            krakenFile: true, 
+            treeColors: "add"});
+    chart.draw("partition");
+  })  
+  }
+    
+  window.addEventListener("resize", function() { 
+      chart.draw();  
+  } );
+    
+</script>
+

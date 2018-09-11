@@ -46,22 +46,6 @@ function setData(data, opts) {
         if (opts.parentField) {
             console.error("ERROR: pathSep and parentField cannot be used together.");
         }
-        if (opts.pathField == opts.nameField) {
-            console.log("ERROR: pathField and nameField are the same!")
-        } else {
-            if (! opts.clipPath) {
-                opts.nameField = opts.PathField
-            } else {
-                data.forEach(d => {
-                    var pos = d[opts.pathField].lastIndexOf(opts.pathSep);
-                    if (pos < d[opts.pathField].length)
-                        d[opts.nameField] = d[opts.pathField].substr(pos + 1);
-                    else {
-                        d[opts.nameField] = d[opts.pathField];
-                    }
-                });
-            }
-        }
         root = d3.stratify()
                      .id(d => d[opts.nameField])
                      .parentId(d => {

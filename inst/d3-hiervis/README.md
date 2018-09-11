@@ -8,6 +8,19 @@ This module is based on [d3 hierarchy](https://github.com/d3/d3-hierarchy) and m
 
 Demo at https://bl.ocks.org/fbreitwieser/31e4be931541c74732dd6807ccb98daf
 
+## Usage
+```
+<script src="https://d3js.org/d3.v5.min.js"></script>
+<script src="https://rawgit.com/fbreitwieser/d3-hiervis/master/src/hiervis.js"></script>
+<script src="https://rawgit.com/fbreitwieser/d3-hiervis/master/src/TreeColors.js"></script>
+<svg width="100%" height="400"> </svg>
+  visualizations = ["vertical sankey", "icicle", "sunburst", "sankey", "cluster", "partition"]
+  d3.csv("https://raw.githubusercontent.com/fbreitwieser/d3-hiervis/master/data/d3.csv").then(function(data) {
+    chart = hiervis(d3.select("svg"), data, {valueField: "size", stat: "sum", pathField: "path", pathSep: "/"});
+    chart.draw("sankey")
+  });
+```
+
 ## Installing
 
 If you use NPM, `npm install d3-hiervis`. Otherwise, download the [latest release](https://github.com/fbreitwieser/d3-hiervis/releases/latest).
@@ -18,11 +31,10 @@ API DOCUMENTATION HERE. Use bold for symbols (such as constructor and method nam
 
 ## Options
 Data import:
- - `pathField`: e.g. `"path"`
- - `valueField`: e.g. `"size"`
- - `stat`: e.g. `"sum"`
- - `pathSep`: e.g. `"/"`
-
+  - default: data is already in hierarchical form, i.e. data is an object representing the root node
+  - if `pathSep` is specified: data is tabular, with `nameField` defining a path, delimited by `pathField`
+  - else if `parentFiled` is specified: data is tabular, with `parentField` defining the parent of `nameField`
+  
 ### Partition and Icicle (vertical partition)
 Based on Mike Bostock's [Zoomable Icicle](https://bl.ocks.org/mbostock/1005873)
 

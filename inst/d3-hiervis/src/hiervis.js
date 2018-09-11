@@ -38,7 +38,7 @@ function setData(data, opts) {
         })
         data = data.filter(d => d.path.startsWith("root"))
         opts.pathSep = "|";
-        opts.pathField = "path";
+        opts.nameField = "path";
         opts.valueField = "taxReads";
         opts.stat = "sum";
     }
@@ -63,16 +63,21 @@ function setData(data, opts) {
             }
         }
         root = d3.stratify()
-                     .id(d => d[opts.pathField])
+                     .id(d => d[opts.nameField])
                      .parentId(d => {
-            var pos = d[opts.pathField].lastIndexOf(opts.pathSep);
-            return d[opts.pathField].substring(0, pos);
+            var pos = d[opts.nameField].lastIndexOf(opts.pathSep);
+            d.parentId = d[opts.nameField].substring(0, pos);
+            if (opts.clipPath) {
+                if (pos < d[opts.nameField].length)
+                  d[opts.nameField] = d[opts.nameField].substr(pos + 1);
+            }
+            return d.parentId;
         })(data);
 
     } else if (opts.parentField) {
         root = d3.stratify()
                      .id(d => d[opts.nameField])
-                     .parentId(d => d[opts.stratifyParentId])(data);
+                     .parentId(d => d[opts.parentField])(data);
     } else {
         root = d3.hierarchy(data);
     }
@@ -156,9 +161,8 @@ const defaults = {
     sankeyMinHeight: null,  // if numeric, labels are only displayed when the node is above the value
     // Stratify options
     parentField: null,     // field for parent when using stratify
-    pathSep: null,         // Use separator on nameField to get name and parent when using stratify
-    pathField: "path",     // Field used to get path when pathSep is not null
-    clipPath: true         // Set nameField to the last part of pathField. When false, the name is the full path
+    pathSep: "/",          // Use separator on nameField to get name and parent when using stratify
+    clipPath: true         // Set name to the last part of path. When false, the name is the full path
   };
 
 //const visualizations = [ "icicle", "treemap", "partition", "pack", "sunburst", "sankey" ];

@@ -3,25 +3,52 @@
 #' <Add Description>
 #'
 #' @param vis One of "sankey", "sunburst", "partition", "treemap"
-#' @param opts
-#'    {valueField: "size", stat: "sum", pathField: "path", pathSep: "/"});
 #' @import htmlwidgets
 #'
 #' @export
-hiervis <- function(vis, data, width = NULL, height = NULL, elementId = NULL,
-                    opts = list(pathField="path", valueField="size", pathSep="/", stat="sum")) {
+#' @examples
+#' data(Titanic)
+#'
+#' ## Tabular data does not need any extra arguments
+#' hiervis(Titanic, "sankey")
+#' hiervis(HairEyeColor, "vertical sankey")
+#'
+#' ## For tabular data (data.frames) with a path, supply nameField, pathSep and valueField
+#' hiervis(d3_modules, "sunburst", nameField = "path", pathSep = "/", valueField = "size")
+#'
+#' ## For tabular data (data.frames) with parent-child information, supply nameField and parentField
+#' data <- data.frame(name = c("Root Node", "Node A", "Node B", "Leaf Node A.1", "Leaf Node A.2"), parent = c(NA, "Root Node", "Root Node", "Node A", "Node A"))
+#' hiervis(data, "sankey", nameField = "name", parentField = "parent", stat = "count")
+hiervis <- function(data, vis, width = NULL, height = NULL, elementId = NULL,
+                    nameField = "name", valueField = "value",
+                    pathSep = NULL, parentField = NULL, stat = "sum") {
 
-  # forward options using x
-  x = list(
-    vis = vis,
-    data = dataframeToD3(data),
-    opts = opts
-  )
+  if (is.table(data)) {
+    data <- d3r::d3_nest(data.frame(data), value_cols = "Freq")
+    pathSep <- NULL
+    parentField <- NULL
+    valueField <- "Freq"
+  } else if (is.data.frame(data)) {
+    if ((is.null(pathSep) && is.null(parentField)) || (!is.null(pathSep) && !is.null(parentField))) {
+      stop("Specify either pathSep (+nameField) or parentField when supplying a data.frame!")
+    }
+    data = dataframeToD3(data)
+  } else {
+    stop("Do not know how to deal with data of class ", class(data))
+  }
+
+  options <- list (nameField = nameField, valueField = valueField,
+                   pathSep = pathSep, parentField = parentField,
+                   stat = stat)
 
   # create widget
   htmlwidgets::createWidget(
     name = 'hiervis',
-    x,
+    list(
+      data = data,
+      vis = vis,
+      opts = options
+    ),
     width = width,
     height = height,
     package = 'hiervis',

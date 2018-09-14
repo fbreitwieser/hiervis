@@ -28,7 +28,8 @@ If you use NPM, `npm install d3-hiervis`. Otherwise, download the [latest releas
 
 ## API Reference
 
-API DOCUMENTATION HERE. Use bold for symbols (such as constructor and method names) and italics for instances. See the other D3 modules for examples.
+TODO
+
 
 ## Options
 Data import:
@@ -47,4 +48,9 @@ based on timelyportfolio's interactive [parttree](http://www.jsinr.me/2017/11/13
 
 
 <a href="#hiervis" name="hiervis">#</a> <b>hiervis</b>()
+
+## Planned features (contributions are highly welcome!)
+
+- Add a dropdown menu in the SVG to change visualizations
+- When changing visualizations, transform rather than replace the nodes
 

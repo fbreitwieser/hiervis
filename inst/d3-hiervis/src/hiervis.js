@@ -2,11 +2,11 @@ function hiervis(svg, data, opts) {
     return new HierVis(svg, data, opts);
 };
 
-function makeid(n) {
+const makeid = function(n) {
     'use strict';
-    var text = "",
-        possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
-        i = 0;
+    let text = "";
+    let possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+    let i = 0;
     for (i = 0; i < n; i++) {
         text += possible.charAt(Math.floor(Math.random() * possible.length));
     }
@@ -14,13 +14,16 @@ function makeid(n) {
 }
 
 
-function setData(data, opts) {
+const setData = function(data, opts) {
     'use strict';
-    var root;
+    let root;
     if (opts.krakenFile) {
-        var parentAtDepth = Array(100).fill("")
+        const parentAtDepth = Array(100).fill("")
+        if (! data[1]) {
+            throw new Error("ERROR - no data.");
+        }
         if (! data[1].taxName) {
-            throw new Error("Doesn't seem to be a KrakenHLL report - required columns are not present");
+            throw new Error("Doesn't seem to be a KrakenHLL report - required columns are not present.");
         }
 
         data.forEach(d => {
@@ -49,7 +52,7 @@ function setData(data, opts) {
         root = d3.stratify()
                      .id(d => d[opts.nameField])
                      .parentId(d => {
-            var pos = d[opts.nameField].lastIndexOf(opts.pathSep);
+            const pos = d[opts.nameField].lastIndexOf(opts.pathSep);
             d.parentId = d[opts.nameField].substring(0, pos);
             if (opts.clipPath) {
                 if (pos < d[opts.nameField].length)
@@ -67,22 +70,22 @@ function setData(data, opts) {
     }
 
     if (opts.simplifyPath) {
-        var removeUselessNode = function(node, negative_depth) {
+        const removeUselessNode = function(node, negative_depth) {
             node.depth -= negative_depth;
             if (!node.children) { return; }
             if (node.parent &&
-                node.children.length == 1 &&
-                node.parent.children.length == 1 &&
-                node.value == node.parent.value) {
+                node.children.length === 1 &&
+                node.parent.children.length === 1 &&
+                node.value === node.parent.value) {
 
                 node.children[0].parent = node.parent;
                 node.parent.children[0] = node.children[0];
                 negative_depth++
                 node.depth -= 1;
             }
-            var max_depth = node.depth;
+            let max_depth = node.depth;
             node.children.forEach(d => {
-                var depth = removeUselessNode(d, negative_depth);
+                const depth = removeUselessNode(d, negative_depth);
                 if (depth > max_depth)
                     max_depth = depth;
             })
@@ -91,11 +94,10 @@ function setData(data, opts) {
         }
         removeUselessNode(root, 0);
         // TODO: Fix height
-        console.log(root)
     }
 
     if (opts.treeColors) {
-        var tcol = TreeColors(opts.treeColors);
+        const tcol = TreeColors(opts.treeColors);
         //tcol.luminanceDelta = -20;
         tcol(root)
     }
@@ -110,11 +112,11 @@ function setData(data, opts) {
         default: //identity by default
             // TODO: Is this necessary when valueField is 'value',
             //       or does d3.hierachy() copy it over?
-            root.each(function(node) { node.value = node.data[opts.valueField]; });
+            root.each(node => { node.value = node.data[opts.valueField] });
             root.value = d3.sum(root.children, d => d.value);
             break;
     }
-    root.data[opts.nameField] = opts.rootName;
+    root.data[opts.nameField] = opts.rootName;    
     return root;
 }
 
@@ -153,14 +155,14 @@ const defaults = {
 const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
 
 class HierVis {
-/*  var opts, element, root, svg, ID;
-  var width, height, maxRadius;
-  var formatNumber, formatCircleNumber; */
+/*  let opts, element, root, svg, ID;
+  let width, height, maxRadius;
+  let formatNumber, formatCircleNumber; */
 
   constructor(svg, data, o) {
     this.opts = Object.assign({}, defaults);
     this.opts['id'] = makeid(5);
-    for (var opt in o) {
+    for (let opt in o) {
       if (typeof(this.opts[opt]) === "undefined") {
         console.error("ERROR: Ignoring unknown option "+opt)
       } else {
@@ -175,6 +177,7 @@ class HierVis {
     this.root = setData(data, this.opts);
     this.root.value = 0;
     this.root.children.forEach(d => this.root.value += d.value);
+    this.root_sav = this.root;
 
     this.svg = svg;
 
@@ -183,58 +186,67 @@ class HierVis {
   set vis(value) {
       this.opts.vis = value;
   }
-
-  filter(txts) {
-      var self = this;
-      var do_update = false;
-      var filter_matching = function(parent, txt, val) {
-          if (!parent.children) {
-              return val;
+    
+  filter(val, txt_regex) {
+      const self = this;
+      let changed_nodes = 0;
+      if (txt_regex.match(/\|$/)) {
+          txt_regex = txt_regex.slice(0, -1);
+      }
+      const re = new RegExp("^"+txt_regex+"$");
+      
+      this.root.each(d => {
+          if (!d.original_value) {
+              d.original_value = d.value
+          } else {
+              d.value = d.original_value
           }
-
-          var index;
-          var found_one = false;
-          for (index = 0; index < parent.children.length; ++index) {
-              var node = parent.children[index];
-              if (node.data[self.opts.nameField] == txt) {
-                  found_one = true;
-                  val = val + node.value;
-                  parent._children = parent.children.slice();
-                  parent._removed_val = val;
-                  parent.children.splice(index, 1);
-                  parent.ancestors().forEach(d => d.value -= val);
-                  do_update = true;
-                  break;
-              } else {
-                  val = filter_matching(node, txt, val);
-                  if (val > 0) {
-                      break;
+      });
+      
+      if (!val) {
+          val = 0;
+      }
+      
+      const updateParentsVal = function(parent, val) {
+          parent.value -= val
+          if (parent.parent) {
+              updateParentsVal(parent.parent, val)
+          }
+      }
+      
+      const filterMinRec = function(node, val, txt_regex) {
+          if (node.children || node.children_sav) {
+              if (!node.children_sav) {
+                node.children_sav = node.children;
+              }
+              
+              const children_new = []
+              for (let i=0; i<node.children_sav.length; i++) {
+                  const child = node.children_sav[i];
+                  
+                  const re_match = child.data[self.opts.nameField].match(re) != null
+                  if (child.value >= val && !re_match) {
+                      children_new.push(child)
+                      filterMinRec(child, val, txt_regex)
+                  } else {
+                      if (re_match) {
+                          // Update parents by removing the values
+                          updateParentsVal(node, child.value)
+                      }
+                      changed_nodes += 1
                   }
               }
+              node.children = children_new;
           }
-          if (!found_one) {
-              // Remove filter (TODO)
-              /*
-              if (parent._children) {
-                  do_update = true;
-                  parent.children = parent._children.slice();
-                  parent._children = null;
-                  // Add back value to ancestors
-                  parent.ancestors().forEach(d => d.value += parent._removed_val);
-              }
-              */
-          }
-          return val;
       }
-      txts.split(",").forEach(txt => {
-          console.log(txt);
-          filter_matching(this.root, txt, 0);
-      });
-      if (do_update) {
-          console.log(this.root);
-          self.draw();
-      }
+      
+      filterMinRec(this.root, val);
+      
+      if (changed_nodes > 0) 
+        self.draw();
   }
+    
+    
 
   draw(vis = null) {
     if (!vis) {
@@ -248,11 +260,11 @@ class HierVis {
 
 
     // append SVG here, instead of selecting it in the constructor?
-    //var g = this.svg.selectAll("g");
+    //const g = this.svg.selectAll("g");
     //g.remove();
     // Get width and height through bounding box
-    var rectBB = this.svg.append('rect').attr("width", "100%").attr("height", "100%");
-    var boundingBox = rectBB.node().getBBox();
+    const rectBB = this.svg.append('rect').attr("width", "100%").attr("height", "100%");
+    const boundingBox = rectBB.node().getBBox();
     this.width = boundingBox.width;
     this.height = boundingBox.height;
     rectBB.remove();
@@ -333,7 +345,10 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
       case "cluster":
         this.cluster();
         break;
-      //case sunburst:
+      case "cycle":
+        this.cycle();
+        break;
+      case "sunburst":
       default:
         this.sunburst();
         break;
@@ -341,6 +356,14 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
     //if (!visualizations.indexOf(vis) >= 0) {
     //  console.log("Don't know visualization " + vis + " - showing Sankey");
     //}
+  }
+    
+  cycle() {
+      for (let i = 1; 1 < 1000; ++i) {
+          ["icicle", "treemap", "partition", "sankey", "cluster", "sunburst", "vertical sankey"].forEach(vis1 => {
+              setTimeout(() => draw(vis1), 1000)
+          })
+      }
   }
 
   pack() {
@@ -353,9 +376,9 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
     const pack1 = this.svg.append("g")
                   .attr("transform", "translate("+diameter/2+","+diameter/2+")")
 
-    var pack = d3.pack().size([diameter, diameter]).padding(2);
+    const pack = d3.pack().size([diameter, diameter]).padding(2);
 
-    var circle = pack1.selectAll("circle")
+    const circle = pack1.selectAll("circle")
                   .data(pack(this.root).descendants())
                   .enter().append("circle")
                   .style("fill", d => this._color(d))
@@ -382,8 +405,7 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
 
   icicle(horizontal=false, is_treemap=false, is_sankey=false) {
     const self = this;
-    const sankeyNodeWidth = is_sankey && horizontal? 10 : 0;
-    const sankeyNodeHeight = is_sankey && !horizontal? 10 : 0;
+    const sankeyNodeSize = 10;
     const sankeyNodeDist = 2;
     const textPadding = 1;
 
@@ -395,49 +417,14 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
     const xx = horizontal? "y" : "x";
     const yy = horizontal? "x" : "y";
 
-    var nodes;
-
-    if (is_treemap) {
-      const treemap = d3.treemap()
-                      .tile(d3.treemapResquarify)
-                      .size([this.width, this.height])
-                      .round(true)
-                      .paddingInner(1);
-      treemap(this.root);
-      nodes = this.root.leaves()
-    } else {
-      var partition = d3.partition()
-                        .padding(0)
-                        .round(false);
-
-      var scale_factor = 1;
-      if (is_sankey) {
-          var max_depth = 1;
-          this.root.each(d => {
-            if (d.depth > max_depth) {
-               max_depth = d.depth;
-            }
-            scale_factor = max_depth / (max_depth + 1)
-
-        })
-      }
-      if (horizontal) {
-        partition.size([this.height, this.width * scale_factor])
-      } else {
-        partition.size([this.width, this.height * scale_factor])
-      }
-
-      partition(this.root);
-
-      if (is_sankey) {
-          var max_fact = 1,
-              max_dy1 = 0;
-
-          function padNodes(d, delta, y0, y1) {
-              var y1_b4 = d[y1];
+    let nodes;
+      
+    // pads Sankey nodes - expects global 'max_dy1' and 'max_fact' variables
+    const padNodes = function(d, delta, y0, y1) {
+              const y1_b4 = d[y1];
               if (d.children) {
-                  var delta_start = delta;
-                  var children_max_y1 = 0
+                  const delta_start = delta;
+                  let children_max_y1 = 0
                   d.children.forEach((e, i) => {
                       delta = padNodes(e, delta, y0, y1)
                       if (e[y1] > children_max_y1) {
@@ -451,7 +438,7 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
                   d.children_max_y1 = Math.max(d[y1] + delta_start, children_max_y1)
 
                   // Set parent at the middle
-                  var shift_delta = (delta_start + delta)/2
+                  const shift_delta = (delta_start + delta)/2
                   if (children_max_y1 > d[y1] + delta_start) {
                     d[y0] += shift_delta;
                     d[y1] += shift_delta;
@@ -472,17 +459,56 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
               }
               return delta;
           }
+
+    if (is_treemap) {
+      const treemap = d3.treemap()
+                      .tile(d3.treemapResquarify)
+                      .size([this.width, this.height])
+                      .round(true)
+                      .paddingInner(1);
+      treemap(this.root);
+      nodes = this.root.leaves()
+    } else {
+      const partition = d3.partition()
+                        .padding(0)
+                        .round(false);
+
+      let scale_factor = 1;
+      if (is_sankey) {
+          let max_depth = 1;
+          this.root.each(d => {
+            if (d.depth > max_depth) {
+               max_depth = d.depth;
+            }
+            scale_factor = max_depth / (max_depth + 1)
+
+        })
+      }
+      if (horizontal) {
+        partition.size([this.height, this.width * scale_factor])
+      } else {
+        partition.size([this.width, this.height * scale_factor])
+      }
+
+      partition(this.root);
+
+      if (is_sankey) {
+          // variables that are modified by padNodes
+          var max_fact = 1, max_dy1 = 0;
+
           padNodes(this.root, 0, "x0", "x1")
 
           // Scale the sizes to fit the window
           this.root.each(d => {
+              d["x0_orig"] = d["x0"]
+              d["x1_orig"] = d["x1"]
               d["x0"] /= max_fact
               d["x1"] /= max_fact
               d.children_min_y0 /= max_fact
               d.children_max_y1 /= max_fact
           })
-
       }
+        
       nodes = this.root.descendants();
 
       nodes.forEach((d, i) => {
@@ -512,24 +538,24 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
     const y = d3.scaleLinear()
                 .range([0, this.height]);
 
-    var icicle1 = this.svg.append("g")
+    const icicle1 = this.svg.append("g")
                           .attr("class", is_sankey? "sankey" : "partition");
-    var icicle = icicle1.selectAll("g")
+    const icicle = icicle1.selectAll("g")
                     .data(nodes).enter().append("g")
 
     // Have labels separate so that they are rendered last
-    var texts1 = this.svg.append("g")
+    const texts1 = this.svg.append("g")
                           .attr("class", "labels"
                                          + (is_sankey? " sankey" : " partition")
                                          + (horizontal? " horizontal" : " vertical"));
-    var texts = texts1.selectAll("text")
+    const texts = texts1.selectAll("text")
                     .data(nodes).enter().append("text")
 
-    var set_texts = function(selection, x, y) {
+    const set_texts = function(selection, x, y) {
         if (is_sankey) {
              selection
-                 .attr("x", d => !horizontal? x((d[x0]+d[x1])/2)  : x(d[x0]) + sankeyNodeWidth + textPadding )
-                 .attr("y", d => horizontal? y((d[y0]+d[y1])/2) : y(d[y0]) + sankeyNodeHeight + textPadding)
+                 .attr("x", d => !horizontal? x((d[x0]+d[x1])/2)  : x(d[x0]) + sankeyNodeSize + textPadding )
+                 .attr("y", d => horizontal? y((d[y0]+d[y1])/2) : y(d[y0]) + sankeyNodeSize + textPadding)
         } else {
           selection
            .attr("x", d => x(d[x0]) + textPadding)
@@ -537,17 +563,15 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
         }
     };
 
-    var set_tspans = function(selection, x, y) {
+    const set_tspans = function(selection, x, y) {
         if (is_sankey) {
-            selection.attr("x", d => !horizontal? x((d[x0]+d[x1])/2)  : x(d[x0]) + sankeyNodeWidth + textPadding )
+            selection.attr("x", d => !horizontal? x((d[x0]+d[x1])/2)  : x(d[x0]) + sankeyNodeSize + textPadding )
         } else {
             selection.attr("x", d => x(d[x0]) + textPadding )
         }
     };
 
-    var rects = function(selection, x, y) {
-        console.log(x)
-        console.log(y)
+    const rects = function(selection, x, y) {
         if (is_sankey) {
             sankey_rects(selection, x, y)
         } else {
@@ -555,14 +579,14 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
         }
     };
 
-    var partition_rects = function(selection, x, y) {
+    const partition_rects = function(selection, x, y) {
        selection.attr("x", d => x(d[x0]) )
            .attr("y", d => y(d[y0]) )
            .attr("width", d => x(d[x1]) - x(d[x0]))
            .attr("height", d => y(d[y1]) - y(d[y0]))
     };
 
-    var sankey_clip_rects = function(selection, x, y) {
+    const sankey_clip_rects = function(selection, x, y) {
        if (horizontal) {
        selection.attr("x", d => x(d[x0]) )
            .attr("y", d => y(d.children_min_y0 - sankeyNodeDist/4))
@@ -577,53 +601,109 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
        }
     };
 
-    var sankey_rects = function(selection, x, y) {
+    const sankey_rects = function(selection, x, y) {
         selection.attr("x", d => x( d[x0] ))
             .attr("y", d => y( d[y0] ))
             .attr("visibility", null)
-            .attr("width", d => horizontal? sankeyNodeWidth : x(d[x1]) - x(d[x0]))
-            .attr("height", d => !horizontal? sankeyNodeHeight : y(d[y1]) - y(d[y0]))
+            .attr("width", d => horizontal? sankeyNodeSize : x(d[x1]) - x(d[x0]))
+            .attr("height", d => !horizontal? sankeyNodeSize : y(d[y1]) - y(d[y0]))
     }
 
-    var parent_rect = function(selection, x, y) {
+    const parent_rect = function(selection, x, y) {
         // Center the parent rectangle on the left side
         selection.attr("x", d => !horizontal? Math.max(0, (self.width - x(d[x1]) + x(d[x0]))/2) : 0)
               .attr("y", d => horizontal? Math.max(0, (self.height - y(d[y1]) + y(d[y0]))/2) : 0)
     }
+    
+        const clicked = function(d) {
+      if (horizontal) {
+        let min_x = d.depth? self.width / 10 : 0;
+        if (d.parent && d[x0] - d.parent[x0] < min_x) {
+          min_x = d[x0] - d.parent[x0];
+        }
 
-    var links, clip_rect, rect, text;
+        x.domain([d[x0], self.width]).range([min_x, self.width]);
+        if (is_sankey) {
+            y.domain([d.children_min_y0, d.children_max_y1])
+        } else {
+          y.domain([d[y0], d[y1]]);
+        }
+      } else {
+        let min_y = d.depth? self.height / 10 : 0;
+        if (d.parent && d[y0] - d.parent[y0] < min_y) {
+          min_y = d[y0] - d.parent[y0];
+        }
 
-    function horizontal_links(selection, x, y) {
-      var lh = d3.linkHorizontal();
+        if (is_sankey && !horizontal) {
+            x.domain([d.children_min_y0, d.children_max_y1])
+        } else {
+            x.domain([d[x0], d[x1]]);
+        }
+        y.domain([d[y0], self.height]).range([min_y, self.height]);
+      }
+
+      if (is_sankey) {
+          clip_rect.transition()
+            .duration(self.opts.transitionDuration)
+             .call(sankey_clip_rects, x, y)
+
+          links.transition()
+                .duration(self.opts.transitionDuration)
+                .call(link_me, x, y)
+                .filter(d1 => d1.depth <= d.depth)
+                .attr("visibility", "hidden")
+      }
+
+       rect.transition()
+              .duration(self.opts.transitionDuration)
+              .call(rects, x, y)
+              .filter(d1 => d1 === d.parent).call(parent_rect, x, y)
+
+       text.transition()
+           .duration(self.opts.transitionDuration)
+           .call(set_texts, x, y)
+
+      if (self.opts.showNumbers)
+          tspan.transition()
+               .duration(self.opts.transitionDuration)
+               .call(set_tspans, x, y)
+    }
+
+
+    // the objects containing the elements
+    let links, clip_rect, rect, text, tspan;
+
+    const horizontal_links = function(selection, x, y) {
+      const lh = d3.linkHorizontal();
       selection
         .attr("visibility", null)
         .attr('d', d => {
          if (d.parent) {
-           return [ lh({source: [x(d.parent[x0]) + sankeyNodeWidth + 1, y(d.parent[y0] + d.sibling_y0s)],
+           return [ lh({source: [x(d.parent[x0]) + sankeyNodeSize + 1, y(d.parent[y0] + d.sibling_y0s)],
                         target: [x(d[x0]) - 1, y(d[y0])]}),
              [ x(d[x0]) - 1, y(d[y0] + d.h)],
              lh({ source: [ x(d[x0]) - 1, y(d[y0] + d.h) ],
-                  target: [ x(d.parent[x0]) + sankeyNodeWidth + 1,
+                  target: [ x(d.parent[x0]) + sankeyNodeSize + 1,
                             y(d.parent[y0] + d.sibling_y0s + d.h) ] }).slice(1)
             ].join(" L "); }})
     }
 
-    function vertical_links(selection, x, y) {
-      var lv = d3.linkVertical();
+    const vertical_links = function(selection, x, y) {
+      const lv = d3.linkVertical();
       selection
         .attr("visibility", null)
         .attr('d', d => {
          if (d.parent) {
-           return [ lv({source: [ x(d.parent[x0] + d.sibling_x0s), y(d.parent[y0]) + sankeyNodeHeight + 1],
+           return [ lv({source: [ x(d.parent[x0] + d.sibling_x0s), y(d.parent[y0]) + sankeyNodeSize + 1],
                         target: [ x(d[x0]), y(d[y0]) - 1]}),
              [ x(d[x0] + d.w), y(d[y0]) - 1],
              lv({ source: [ x(d[x0] + d.w), y(d[y0]) -1 ],
                   target: [ x(d.parent[x0] + d.sibling_x0s + d.w),
-                            y(d.parent[y0]) + sankeyNodeHeight + 1 ] }).slice(1)
+                            y(d.parent[y0]) + sankeyNodeSize + 1 ] }).slice(1)
             ].join(" L ");}})
     }
 
-    var link_me = horizontal? horizontal_links : vertical_links
+    const link_me = horizontal? horizontal_links : vertical_links
 
     if (is_sankey) {
       clip_rect = icicle.append("clipPath")
@@ -665,7 +745,7 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
     }*/
 
     if (this.opts.showNumbers)
-        var tspan = text.append("tspan")
+        tspan = text.append("tspan")
             .attr("dy", "1em")
             .call(set_tspans, x => x, y => y)
             .text(d => this.formatCircleNumber(d.value));
@@ -679,88 +759,31 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
         .append('title')
         .text(d => d.data[this.opts.nameField] + '\n' + this.formatNumber(d.value));
 
-    function clicked(d) {
-      if (horizontal) {
-        var min_x = d.depth? self.width / 10 : 0;
-        if (d.parent && d[x0] - d.parent[x0] < min_x) {
-          min_x = d[x0] - d.parent[x0];
-        }
-
-        x.domain([d[x0], self.width]).range([min_x, self.width]);
-        if (is_sankey) {
-            y.domain([d.children_min_y0, d.children_max_y1])
-        } else {
-          y.domain([d[y0], d[y1]]);
-        }
-      } else {
-        var min_y = d.depth? self.height / 10 : 0;
-        if (d.parent && d[y0] - d.parent[y0] < min_y) {
-          min_y = d[y0] - d.parent[y0];
-        }
-
-        if (is_sankey && !horizontal) {
-            x.domain([d.children_min_y0, d.children_max_y1])
-        } else {
-            x.domain([d[x0], d[x1]]);
-        }
-        y.domain([d[y0], self.height]).range([min_y, self.height]);
-      }
-
-      if (is_sankey) {
-          clip_rect.transition()
-            .duration(self.opts.transitionDuration)
-             .call(sankey_clip_rects, x, y)
-
-          links.transition()
-                .duration(self.opts.transitionDuration)
-                .call(link_me, x, y)
-                .filter(d1 => d1.depth <= d.depth)
-                .attr("visibility", "hidden")
-      }
-
-       rect.transition()
-              .duration(self.opts.transitionDuration)
-              .call(rects, x, y)
-              .filter(d1 => d1 === d.parent).call(parent_rect, x, y)
-
-       text.transition()
-           .duration(self.opts.transitionDuration)
-           .call(set_texts, x, y)
-
-      if (self.opts.showNumbers)
-          tspan.transition()
-               .duration(self.opts.transitionDuration)
-               .call(set_tspans, x, y)
-    }
   }
 
   tree() {
-    var self = this;
-    var treeLayout = d3.tree();
+    const treeLayout = d3.tree();
     treeLayout(this.root);
   };
 
   cluster() {
-    var self = this;
+    const self = this;
 
-    var cluster = this.svg.append("g");
-    var tree = d3.tree().size([this.height, this.width]);
+    const cluster = this.svg.append("g");
+    const tree = d3.tree().size([this.height, this.width]);
     tree(this.root);
 
-    var link = cluster.selectAll(".link")
+    const link = cluster.selectAll(".link")
                    .data(this.root.descendants().slice(1))
                    .enter().append("path").attr("class", "link")
-                   .attr("d", function(d) {
-                       return "M" + d.y + "," + d.x +
-                              "C" + (d.parent.y + 100) + "," + d.x +
-                              " " + (d.parent.y + 100) + "," + d.parent.x +
-                              " " + d.parent.y + "," + d.parent.x;
-                   });
-    var node = cluster.selectAll(".node")
+                   .attr("d", d =>
+                       `M${d.y},${d.x}C${d.parent.y + 100},${d.x} ${d.parent.y + 100},${d.parent.x} ${d.parent.y},${d.parent.x}`
+                   );
+    const node = cluster.selectAll(".node")
                    .data(this.root.descendants())
                    .enter().append("g")
-                   .attr("class", function(d) { return "node " + (d.children? "node--internal" : "node--leaf"); })
-                   .attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; })
+                   .attr("class", d => "node " + (d.children? "node--internal" : "node--leaf"))
+                   .attr("transform", d => "translate(" + d.y + "," + d.x + ")" )
 
     node.append("circle").attr("r", 2.5);
     node.append("text")
@@ -771,10 +794,10 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
   }
 
   sunburst() {
-    var self = this;
-    var partition = d3.partition();
+    const self = this;
+    const partition = d3.partition();
     partition(this.root);
-    var nodes = this.root.descendants();
+    const nodes = this.root.descendants();
 
     this.svg.attr('viewBox', `${-this.width / 2} ${-this.height / 2} ${this.width} ${this.height}`);
     this.svg.on('click', () => sankeyClicked()); // Reset zoom on canvas click
@@ -849,14 +872,14 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
       text
         //.attr("clip-path", (_, i) => "url(#clip-" + i + self.ID + ")")
         // clip-path doesn't work
-        .attr("transform", function(d) {
-          var angle = (x(d.x0) + x(d.x1))*90/Math.PI - 90
-          var res= "translate("+arc.centroid(d)+")rotate("+ ((angle > 90 || angle < -90)? angle - 180 : angle) +")"
+        .attr("transform", (d) => {
+          const angle = (x(d.x0) + x(d.x1))*90/Math.PI - 90
+          const res= "translate("+arc.centroid(d)+")rotate("+ ((angle > 90 || angle < -90)? angle - 180 : angle) +")"
           return res;
         })
         .text(d => d.data[this.opts.nameField]);
     } else {
-      var text2 = text
+      const text2 = text
         .attr("clip-path", (_, i) => "url(#clip-" + i + self.ID + ")")
         .append('textPath')
         .attr('startOffset','50%')
@@ -871,7 +894,7 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
     }
 
 
-    function sankeyClicked(d = { x0: 0, x1: 1, y0: 0, y1: 1 }) {
+    const sankeyClicked = function(d = { x0: 0, x1: 1, y0: 0, y1: 1 }) {
         // Reset to top-level if no data point specified
       if (!d.children)
         return;
@@ -892,9 +915,9 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
       moveStackToFront(d);
 
 
-      function moveStackToFront(elD) {
+      const moveStackToFront = function(elD) {
         self.svg.selectAll('.slice.' + self.ID).filter(d => d === elD)
-                               .each(function(d) {
+                               .each(d => {
                                  this.parentNode.appendChild(this);
                                  if (d.parent) { moveStackToFront(d.parent); }
                                })

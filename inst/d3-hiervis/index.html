@@ -32,6 +32,9 @@ Filter minimum value: <input type="number" name="filterMin" id="filterMinVal" on
 <button class="vis">vertical sankey</button>
 <button class="vis">tree</button>
 <button class="vis">cluster</button>
+<button class="vis">cycle</button>
+<button class="switch">switch_horizontal</button>
+
 <form>
     <label>text separator:</label><input type="text" name="textSep" value=","/>
     <label>pathSep:</label><input type="text" name="pathSep" value="/"/> 
@@ -115,6 +118,10 @@ Filter minimum value: <input type="number" name="filterMin" id="filterMinVal" on
     const vis = d3.select(this).text();
     chart.draw(vis);
   });
+    
+  d3.selectAll('button.switch').on('click', function() {
+      chart.switch_horizontal();
+  })
 
   d3.csv("data/d3.csv").then(function(data) {
     tabulate1("#datatable1_container", data)

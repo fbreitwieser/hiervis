@@ -47,7 +47,8 @@ For `data.frame`s with a path, specify nameField (with path), pathSep and valueF
 
 For `data.frame`s with parent-child information, supply nameField and parentField
 ```r
-> data <- data.frame(name = c("Root Node", "Node A", "Node B", "Leaf Node A.1", "Leaf Node A.2"), parent = c(NA, "Root Node", "Root Node", "Node A", "Node A"))
+> data <- data.frame(name = c("Root Node", "Node A", "Node B", "Leaf Node A.1", "Leaf Node A.2"), 
+                     parent = c(NA, "Root Node", "Root Node", "Node A", "Node A"))
 > hiervis(data, "sankey", nameField = "name", parentField = "parent", stat = "count")
 ```
 ![image](https://user-images.githubusercontent.com/516060/50473960-61756d80-09bf-11e9-8cb5-77d8541d50de.png)

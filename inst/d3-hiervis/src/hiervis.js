@@ -49,6 +49,18 @@ const setData = function(data, opts) {
         if (opts.parentField) {
             console.error("ERROR: pathSep and parentField cannot be used together.");
         }
+
+
+        var tree_res = ["root" = {name: "root", children: [], depth: 0}];
+        data.forEach(function(d) {
+
+          row.ancestorIds = d[opts.nameField].split("/");
+        });
+
+        root = d3.hierarchy(burrow(data));
+
+
+
         root = d3.stratify()
                      .id(d => d[opts.nameField])
                      .parentId(d => {
@@ -116,7 +128,7 @@ const setData = function(data, opts) {
             root.value = d3.sum(root.children, d => d.value);
             break;
     }
-    root.data[opts.nameField] = opts.rootName;    
+    root.data[opts.nameField] = opts.rootName;
     return root;
 }
 
@@ -186,7 +198,7 @@ class HierVis {
   set vis(value) {
       this.opts.vis = value;
   }
-    
+
   filter(val, txt_regex) {
       const self = this;
       let changed_nodes = 0;
@@ -194,7 +206,7 @@ class HierVis {
           txt_regex = txt_regex.slice(0, -1);
       }
       const re = new RegExp("^"+txt_regex+"$");
-      
+
       this.root.each(d => {
           if (!d.original_value) {
               d.original_value = d.value
@@ -202,28 +214,28 @@ class HierVis {
               d.value = d.original_value
           }
       });
-      
+
       if (!val) {
           val = 0;
       }
-      
+
       const updateParentsVal = function(parent, val) {
           parent.value -= val
           if (parent.parent) {
               updateParentsVal(parent.parent, val)
           }
       }
-      
+
       const filterMinRec = function(node, val, txt_regex) {
           if (node.children || node.children_sav) {
               if (!node.children_sav) {
                 node.children_sav = node.children;
               }
-              
+
               const children_new = []
               for (let i=0; i<node.children_sav.length; i++) {
                   const child = node.children_sav[i];
-                  
+
                   const re_match = child.data[self.opts.nameField].match(re) != null
                   if (child.value >= val && !re_match) {
                       children_new.push(child)
@@ -239,14 +251,14 @@ class HierVis {
               node.children = children_new;
           }
       }
-      
+
       filterMinRec(this.root, val);
-      
-      if (changed_nodes > 0) 
+
+      if (changed_nodes > 0)
         self.draw();
   }
-    
-    
+
+
 
   draw(vis = null) {
     if (!vis) {
@@ -357,7 +369,7 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
     //  console.log("Don't know visualization " + vis + " - showing Sankey");
     //}
   }
-    
+
   cycle() {
       for (let i = 1; 1 < 1000; ++i) {
           ["icicle", "treemap", "partition", "sankey", "cluster", "sunburst", "vertical sankey"].forEach(vis1 => {
@@ -418,7 +430,7 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
     const yy = horizontal? "x" : "y";
 
     let nodes;
-      
+
     // pads Sankey nodes - expects global 'max_dy1' and 'max_fact' variables
     const padNodes = function(d, delta, y0, y1) {
               const y1_b4 = d[y1];
@@ -508,7 +520,7 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
               d.children_max_y1 /= max_fact
           })
       }
-        
+
       nodes = this.root.descendants();
 
       nodes.forEach((d, i) => {
@@ -614,7 +626,7 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
         selection.attr("x", d => !horizontal? Math.max(0, (self.width - x(d[x1]) + x(d[x0]))/2) : 0)
               .attr("y", d => horizontal? Math.max(0, (self.height - y(d[y1]) + y(d[y0]))/2) : 0)
     }
-    
+
     const clicked = function(d) {
       if (horizontal) {
         let min_x = d.depth? self.width / 10 : 0;

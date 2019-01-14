@@ -39,13 +39,14 @@
 #' hiervis(data, "sankey", nameField = "name", parentField = "parent", stat = "count")
 hiervis <- function(data, vis, width = NULL, height = NULL, elementId = NULL,
                     nameField = "name", valueField = "value",
-                    pathSep = NULL, parentField = NULL, stat = "sum") {
+                    pathSep = NULL, parentField = NULL, stat = "count") {
 
   if (is.table(data)) {
     data <- d3r::d3_nest(data.frame(data), value_cols = "Freq")
     pathSep <- NULL
     parentField <- NULL
     valueField <- "Freq"
+    stat <- "sum"
   } else if (is.data.frame(data)) {
     if ((is.null(pathSep) && is.null(parentField)) || (!is.null(pathSep) && !is.null(parentField))) {
       stop("Specify either pathSep (+nameField) or parentField when supplying a data.frame!")

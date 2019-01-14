@@ -6,7 +6,7 @@
 \usage{
 hiervis(data, vis, width = NULL, height = NULL, elementId = NULL,
   nameField = "name", valueField = "value", pathSep = NULL,
-  parentField = NULL, stat = "sum")
+  parentField = NULL, stat = "count")
 }
 \arguments{
 \item{data}{tabular data or data.frame}

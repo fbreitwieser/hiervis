@@ -7,12 +7,48 @@ The standalone JS/D3 part of the library is available at https://github.com/fbre
 ![ezgif-5-4e1ea53a07](https://user-images.githubusercontent.com/516060/45301339-c2e00200-b4de-11e8-9a54-3cac7f052335.gif)
 
 ## Usage
-```
+```r
 # devtools::install_github("fbreitwieser/hiervis)
 library(hiervis)
-hiervis("sankey", d3_modules)
-hiervis("sunburst", d3_modules)
-hiervis("partition", d3_modules)
-hiervis("icicle", d3_modules)
 ```
+Tabular data works with default arguments:
+```r
+> str(Titanic)
+ table [1:4, 1:2, 1:2, 1:2] 0 0 35 0 0 0 17 0 118 154 ...
+ - attr(*, "dimnames")=List of 4
+  ..$ Class   : chr [1:4] "1st" "2nd" "3rd" "Crew"
+  ..$ Sex     : chr [1:2] "Male" "Female"
+  ..$ Age     : chr [1:2] "Child" "Adult"
+  ..$ Survived: chr [1:2] "No" "Yes"
+> hiervis(Titanic, "sankey")
+```
+![image](https://user-images.githubusercontent.com/516060/50473678-2c1c5000-09be-11e9-8764-3d6920888240.png)
 
+```r
+> hiervis(HairEyeColor, "vertical sankey")
+> str(HairEyeColor)
+ table [1:4, 1:4, 1:2] 32 53 10 3 11 50 10 30 10 25 ...
+ - attr(*, "dimnames")=List of 3
+  ..$ Hair: chr [1:4] "Black" "Brown" "Red" "Blond"
+  ..$ Eye : chr [1:4] "Brown" "Blue" "Hazel" "Green"
+  ..$ Sex : chr [1:2] "Male" "Female"
+```
+![image](https://user-images.githubusercontent.com/516060/50473786-a6e56b00-09be-11e9-8a05-37bc0cd7d78b.png)
+
+For `data.frame`s with a path, specify nameField (with path), pathSep and valueField:
+```r
+> str(d3_modules)
+'data.frame':	463 obs. of  2 variables:
+ $ size: int  NA NA NA NA NA NA NA NA NA NA ...
+ $ path: chr  "d3" "d3/d3-array" "d3/d3-array/threshold" "d3/d3-axis" ...
+> hiervis(d3_modules, "sunburst", nameField = "path", pathSep = "/", valueField = "size")
+```
+![image](https://user-images.githubusercontent.com/516060/50473845-e0b67180-09be-11e9-87cd-a782f012bc0d.png)
+
+For `data.frame`s with parent-child information, supply nameField and parentField
+```r
+> data <- data.frame(name = c("Root Node", "Node A", "Node B", "Leaf Node A.1", "Leaf Node A.2"), 
+                     parent = c(NA, "Root Node", "Root Node", "Node A", "Node A"))
+> hiervis(data, "sankey", nameField = "name", parentField = "parent", stat = "count")
+```
+![image](https://user-images.githubusercontent.com/516060/50473960-61756d80-09bf-11e9-8cb5-77d8541d50de.png)

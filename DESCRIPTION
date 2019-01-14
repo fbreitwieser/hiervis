@@ -1,11 +1,13 @@
 Package: hiervis
-Title: Hierarchical visualizations for R/Shiny
+Title: Interactive hierarchical visualizations for R/Shiny
 Version: 0.0.0.9000
 Authors@R: person("Florian P", "Breitwieser", email = "florian.bw@gmail.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
-Depends: R (>= 3.4.1)
-Imports: shiny, d3r
-License: What license is it under?
+Description: Interactive hierarchical visualizations for R/Shiny based on d3. Supported visualizations include Sankey, Partition, Sunburst and Icicle.
+BugReports: https://github.com/fbreitwieser/hiervis/issues
+URL: https://github.com/fbreitwieser/hiervis
+Depends: R (>= 3.1)
+Imports: shiny, htmlwidgets, htmltools, d3r
+License: GPL-3
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 6.0.1

@@ -6,13 +6,21 @@
 \usage{
 hiervis(data, vis, width = NULL, height = NULL, elementId = NULL,
   nameField = "name", valueField = "value", pathSep = NULL,
-  parentField = NULL, stat = "sum")
+  parentField = NULL, stat = "count")
 }
 \arguments{
+\item{data}{data.frame containing}
+
 \item{vis}{One of "sankey", "sunburst", "partition", "treemap"}
+
+\item{width}{Width of SVG element.}
+
+\item{height}{Height of SVG element.}
+
+\item{pathSep}{If pathSep is supplied, consider the nameField to be a path.}
 }
 \description{
-<Add Description>
+Creates hierarchical visualizations based on data frame.
 }
 \examples{
 data(Titanic)

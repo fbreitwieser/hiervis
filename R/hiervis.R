@@ -1,8 +1,18 @@
 #' Create a hierarchical visualization
 #'
-#' <Add Description>
+#' Creates hierarchical visualizations based on data frame.
 #'
+#' @param data data.frame containing
+#' @param width Width of SVG element.
+#' @param height Height of SVG element.
+#' @param elementId
+#' @param nameField
+#' @param valueField
+#' @param pathSep If pathSep is supplied, consider the nameField to be a path.
+#' @param parentField
+#' @param stat
 #' @param vis One of "sankey", "sunburst", "partition", "treemap"
+#'
 #' @import htmlwidgets
 #'
 #' @export
@@ -21,13 +31,14 @@
 #' hiervis(data, "sankey", nameField = "name", parentField = "parent", stat = "count")
 hiervis <- function(data, vis, width = NULL, height = NULL, elementId = NULL,
                     nameField = "name", valueField = "value",
-                    pathSep = NULL, parentField = NULL, stat = "sum") {
+                    pathSep = NULL, parentField = NULL, stat = "count") {
 
   if (is.table(data)) {
     data <- d3r::d3_nest(data.frame(data), value_cols = "Freq")
     pathSep <- NULL
     parentField <- NULL
     valueField <- "Freq"
+    stat <- "sum"
   } else if (is.data.frame(data)) {
     if ((is.null(pathSep) && is.null(parentField)) || (!is.null(pathSep) && !is.null(parentField))) {
       stop("Specify either pathSep (+nameField) or parentField when supplying a data.frame!")

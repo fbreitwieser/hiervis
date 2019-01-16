@@ -4,7 +4,7 @@
 
 The standalone JS/D3 part of the library is available at https://github.com/fbreitwieser/d3-hiervis. 
 
-![ezgif-5-4e1ea53a07](https://user-images.githubusercontent.com/516060/45301339-c2e00200-b4de-11e8-9a54-3cac7f052335.gif)
+![screenshot 2019-01-16 14 46 10](https://user-images.githubusercontent.com/516060/51274565-7ed5a000-199d-11e9-92a0-7c13ee9af5fa.png)
 
 ## Usage
 `hiervis_demo()` showcases the supported visualizations and prints the command to reproduce the visualization. Also works with custom data.
@@ -14,7 +14,6 @@ The standalone JS/D3 part of the library is available at https://github.com/fbre
 library(hiervis)
 hiervis_demo()
 ```
-![screenshot 2019-01-16 14 46 10](https://user-images.githubusercontent.com/516060/51274565-7ed5a000-199d-11e9-92a0-7c13ee9af5fa.png)
 
 ## Detailed usage
 

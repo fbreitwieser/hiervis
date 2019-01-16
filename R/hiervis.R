@@ -29,9 +29,14 @@
 #' ## For tabular data (data.frames) with parent-child information, supply nameField and parentField
 #' data <- data.frame(name = c("Root Node", "Node A", "Node B", "Leaf Node A.1", "Leaf Node A.2"), parent = c(NA, "Root Node", "Root Node", "Node A", "Node A"))
 #' hiervis(data, "sankey", nameField = "name", parentField = "parent", stat = "count")
-hiervis <- function(data, vis, width = NULL, height = NULL, elementId = NULL,
+hiervis <- function(data, vis = NULL, width = NULL, height = NULL, elementId = NULL,
                     nameField = "name", valueField = "value",
                     pathSep = NULL, parentField = NULL, stat = "count") {
+
+  if (is.null(vis)) {
+    message("vis parameter empty - displaying 'sankey'")
+    vis <- "sankey"
+  }
 
   if (is.table(data)) {
     data <- d3r::d3_nest(data.frame(data), value_cols = "Freq")
@@ -126,23 +131,23 @@ renderHiervis <- function(expr, env = parent.frame(), quoted = FALSE) {
 }
 
 # Add custom HTML to wrap the widget to allow for buttons
-hiervis_html <- function(id, style, class, ...){
-  htmltools::tags$div(
-    id = id, class = class, style = style,
-    htmltools::tags$div(
-      class = "btn-group zoom-menu",
-      htmltools::tags$button(
-        type = "button",
-        class = "btn btn-default btn-lg zoom-in",
-        title = "Zoom in",
-        "+"
-      ),
-      htmltools::tags$button(
-        type = "button",
-        class = "btn btn-default btn-lg zoom-out",
-        title = "Zoom out",
-        "-"
-      )
-    )
-  )
-}
+# hiervis_html <- function(id, style, class, ...){
+#   htmltools::tags$div(
+#     id = id, class = class, style = style,
+#     htmltools::tags$div(
+#       class = "btn-group zoom-menu",
+#       htmltools::tags$button(
+#         type = "button",
+#         class = "btn btn-default btn-lg zoom-in",
+#         title = "Zoom in",
+#         "+"
+#       ),
+#       htmltools::tags$button(
+#         type = "button",
+#         class = "btn btn-default btn-lg zoom-out",
+#         title = "Zoom out",
+#         "-"
+#       )
+#     )
+#   )
+# }

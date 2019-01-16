@@ -4,12 +4,13 @@
 \alias{hiervis}
 \title{Create a hierarchical visualization from tabular data and data.frames}
 \usage{
-hiervis(data, vis = NULL, width = NULL, height = NULL, elementId = NULL,
-  nameField = "name", valueField = "value", pathSep = NULL,
-  parentField = NULL, stat = "count", vis.opts = list(transitionDuration =
-  350, showNumbers = TRUE, numberFormat = ",d", treeColors = TRUE, treemapHier =
-  TRUE, sunburstLabelsRadiate = FALSE, circleNumberFormat = ".2s",
-  linkColorChild = FALSE, sankeyMinHeight = NULL))
+hiervis(data, vis = NULL, width = NULL, height = NULL,
+  elementId = NULL, nameField = "name", valueField = "value",
+  pathSep = NULL, parentField = NULL, stat = "count",
+  vis.opts = list(transitionDuration = 350, showNumbers = TRUE,
+  numberFormat = ",d", treeColors = TRUE, treemapHier = TRUE,
+  sunburstLabelsRadiate = FALSE, circleNumberFormat = ".2s", linkColorChild
+  = FALSE, sankeyMinHeight = NULL))
 }
 \arguments{
 \item{data}{tabular data or data.frame}

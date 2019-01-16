@@ -2,6 +2,5 @@
 
 export(hiervis)
 export(hiervisOutput)
-export(hiervis_demo)
 export(renderHiervis)
 import(htmlwidgets)

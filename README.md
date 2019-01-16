@@ -4,7 +4,7 @@
 
 The standalone JS/D3 part of the library is available at https://github.com/fbreitwieser/d3-hiervis. 
 
-![screenshot 2019-01-16 14 46 10](https://user-images.githubusercontent.com/516060/51274565-7ed5a000-199d-11e9-92a0-7c13ee9af5fa.png)
+![hiervis demo](https://user-images.githubusercontent.com/516060/51274893-5b5f2500-199e-11e9-8548-1c861e05e586.png)
 
 ## Usage
 `hiervis_demo()` showcases the supported visualizations and prints the command to reproduce the visualization. Also works with custom data.

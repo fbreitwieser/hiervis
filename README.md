@@ -2,7 +2,7 @@
 
 "Many datasets are intrinsically hierarchical. Consider geographic entities, such as census blocks, census tracts, counties and states; the command structure of businesses and governments; file systems and software packages. And even non-hierarchical data may be arranged empirically into a hierarchy, as with k-means clustering or phylogenetic trees." [d3-hierarchy README](https://github.com/d3/d3-hierarchy)
 
-Interactive visualization of hierarchical datasets with R and Shiny - includes horizontal and vertial Sankey, Partition, Icicle and Treemap. Based on https://github.com/fbreitwieser/d3-hiervis. 
+Interactive visualization of hierarchical datasets with R and Shiny - includes horizontal and vertial Sankey, Sunburst, Partition, Icicle and Treemap. Based on https://github.com/fbreitwieser/d3-hiervis. 
 
 ![hiervis demo](https://user-images.githubusercontent.com/516060/51274893-5b5f2500-199e-11e9-8548-1c861e05e586.png)
 

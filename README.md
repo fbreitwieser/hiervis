@@ -1,4 +1,4 @@
-# :cactus: d3-hiervis - Hierarchical visualizations for R/Shiny
+# :cactus: hiervis - Hierarchical visualizations for R/Shiny
 
 "Many datasets are intrinsically hierarchical. Consider geographic entities, such as census blocks, census tracts, counties and states; the command structure of businesses and governments; file systems and software packages. And even non-hierarchical data may be arranged empirically into a hierarchy, as with k-means clustering or phylogenetic trees." [d3-hierarchy README](https://github.com/d3/d3-hierarchy)
 
@@ -7,10 +7,17 @@ The standalone JS/D3 part of the library is available at https://github.com/fbre
 ![ezgif-5-4e1ea53a07](https://user-images.githubusercontent.com/516060/45301339-c2e00200-b4de-11e8-9a54-3cac7f052335.gif)
 
 ## Usage
+`hiervis_demo()` showcases the supported visualizations and prints the command to reproduce the visualization. Also works with custom data.
+
 ```r
 # devtools::install_github("fbreitwieser/hiervis")
 library(hiervis)
+hiervis_demo()
 ```
+![screenshot 2019-01-16 14 46 10](https://user-images.githubusercontent.com/516060/51274565-7ed5a000-199d-11e9-92a0-7c13ee9af5fa.png)
+
+## Detailed usage
+
 Tabular data works with default arguments:
 ```r
 > str(Titanic)

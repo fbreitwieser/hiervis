@@ -4,9 +4,12 @@
 \alias{hiervis}
 \title{Create a hierarchical visualization from tabular data and data.frames}
 \usage{
-hiervis(data, vis, width = NULL, height = NULL, elementId = NULL,
+hiervis(data, vis = NULL, width = NULL, height = NULL, elementId = NULL,
   nameField = "name", valueField = "value", pathSep = NULL,
-  parentField = NULL, stat = "count")
+  parentField = NULL, stat = "count", vis.opts = list(transitionDuration =
+  350, showNumbers = TRUE, numberFormat = ",d", treeColors = TRUE, treemapHier =
+  TRUE, sunburstLabelsRadiate = FALSE, circleNumberFormat = ".2s",
+  linkColorChild = FALSE, sankeyMinHeight = NULL))
 }
 \arguments{
 \item{data}{tabular data or data.frame}
@@ -28,6 +31,8 @@ hiervis(data, vis, width = NULL, height = NULL, elementId = NULL,
 \item{parentField}{field in data that has the parent name or ID}
 
 \item{stat}{a statistic to calculate the value, e.g. "count"}
+
+\item{vis.opts}{additional parameters given to the javascript hiervis function}
 }
 \description{
 This function can create a variety of interactive d3 visualizations from tables and

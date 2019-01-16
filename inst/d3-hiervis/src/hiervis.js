@@ -50,7 +50,7 @@ const setData = function(data, opts) {
             console.error("ERROR: pathSep and parentField cannot be used together.");
         }
 
-
+/*
         var tree_res = ["root" = {name: "root", children: [], depth: 0}];
         data.forEach(function(d) {
 
@@ -58,7 +58,7 @@ const setData = function(data, opts) {
         });
 
         root = d3.hierarchy(burrow(data));
-
+*/
 
 
         root = d3.stratify()

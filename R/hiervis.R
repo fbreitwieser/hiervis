@@ -19,6 +19,7 @@
 #' @param parentField field in data that has the parent name or ID
 #' @param valueField field in data that has quantitative values
 #' @param stat a statistic to calculate the value, e.g. "count"
+#' @param vis.opts additional parameters given to the javascript hiervis function
 #'
 #' @import htmlwidgets
 #'
@@ -39,7 +40,20 @@
 #' hiervis(data, "sankey", nameField = "name", parentField = "parent", stat = "count")
 hiervis <- function(data, vis = NULL, width = NULL, height = NULL, elementId = NULL,
                     nameField = "name", valueField = "value",
-                    pathSep = NULL, parentField = NULL, stat = "count") {
+                    pathSep = NULL, parentField = NULL, stat = "count",
+                    vis.opts = list(transitionDuration=350,
+                                    showNumbers = TRUE,
+                                    numberFormat = ",d",
+                                    treeColors = TRUE,
+                                    # Treemap options
+                                    treemapHier = TRUE,
+                                    # Sunburst options
+                                    sunburstLabelsRadiate = FALSE,
+                                    circleNumberFormat = ".2s",
+                                    # Sankey options
+                                    linkColorChild = FALSE,  # it true, color links based on child, not the parent
+                                    sankeyMinHeight = NULL # if numeric, labels are only displayed when the node is above the value
+                    )) {
 
   if (is.null(vis)) {
     message("vis parameter empty - displaying 'sankey'")
@@ -61,9 +75,9 @@ hiervis <- function(data, vis = NULL, width = NULL, height = NULL, elementId = N
     stop("Do not know how to deal with data of class ", class(data))
   }
 
-  options <- list (nameField = nameField, valueField = valueField,
-                   pathSep = pathSep, parentField = parentField,
-                   stat = stat)
+  options <- c(list (nameField = nameField, valueField = valueField,
+                pathSep = pathSep, parentField = parentField,
+                stat = stat), vis.opts)
 
   # create widget
   htmlwidgets::createWidget(
@@ -77,7 +91,7 @@ hiervis <- function(data, vis = NULL, width = NULL, height = NULL, elementId = N
     height = height,
     package = 'hiervis',
     elementId = elementId,
-    dependencies = list(d3r::d3_dep_v4(), hiervis_dep())
+    dependencies = list(d3r::d3_dep_v4(), treecolors_dep(), hiervis_dep())
   )
 }
 
@@ -104,10 +118,25 @@ hiervis_dep <- function() {
     src = c(
       file = system.file("d3-hiervis/src", package="hiervis")
     ),
-    script = c("hiervis.js", "TreeColors.js")
+    script = c("hiervis.js")
     #stylesheet = "d2b_custom.css"
   )
 }
+
+
+#' @keywords internal
+treecolors_dep <- function() {
+  htmltools::htmlDependency(
+    name = "treecolors",
+    version = "0.1",
+    src = c(
+      file = system.file("d3-hiervis/src", package="hiervis")
+    ),
+    script = c("TreeColors.js")
+    #stylesheet = "d2b_custom.css"
+  )
+}
+
 
 
 #' Shiny bindings for hiervis

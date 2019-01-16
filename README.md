@@ -8,7 +8,7 @@ The standalone JS/D3 part of the library is available at https://github.com/fbre
 
 ## Usage
 ```r
-# devtools::install_github("fbreitwieser/hiervis)
+# devtools::install_github("fbreitwieser/hiervis")
 library(hiervis)
 ```
 Tabular data works with default arguments:

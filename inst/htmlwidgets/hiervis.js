@@ -9,6 +9,9 @@ HTMLWidgets.widget({
     var el = el;
     var svg = d3.select(el).append("svg").attr("width", width).attr("height", height);
 
+    hiervisDispatch.on("mouseover", d => { Shiny.onInputChange(el.id + '_hover', d); });
+    hiervisDispatch.on("clicked", d => { Shiny.onInputChange(el.id + '_clicked', d); });
+
     return {
 
       renderValue: function(x) {

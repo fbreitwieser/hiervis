@@ -2,7 +2,7 @@
 <script src="src/d3.v5.min.js"></script>
 <script src="src/hiervis.js"></script> 
 <script src="src/TreeColors.js"></script>
-<link rel="stylesheet" href="style.css">
+<script src="src/breadcrumb.js"></script>
 <style>
 th { font-size: 12px; }
 td { font-size: 11px; }
@@ -21,6 +21,7 @@ td { font-size: 11px; }
 </div>
 Filter: <input type="text" name="filter" id="filterTxt" oninput="filterChanged()" />
 Filter minimum value: <input type="number" name="filterMin" id="filterMinVal" oninput="filterChanged()" />
+<svg id="breadcrumb" width="100%" height="50"> </svg>
 <svg id="h1" width="100%" height="400"> </svg>
 <div id="datatable1_container">
 </div>
@@ -43,6 +44,8 @@ Filter minimum value: <input type="number" name="filterMin" id="filterMinVal" on
     <input type="file" id="fileInput" onchange="uploadFiles(this.files)" />
 </form>
 <script>
+
+    var breadcrumb = d3.breadcrumb().container('svg#breadcrumb');
     function filterChanged() {
         chart.filter(+document.getElementById('filterMinVal').value,
                      document.getElementById('filterTxt').value);
@@ -93,10 +96,33 @@ Filter minimum value: <input type="number" name="filterMin" id="filterMinVal" on
                krakenFile: true, 
                treeColors: null});
              chart.draw("vertical sankey");
+
              
         });
     }
     }
+
+var sel_path;
+
+hiervisDispatch.on("mouseover", d => {
+  if (d)
+    breadcrumb.show(d);
+  // set value next to breadcrumb
+});
+
+hiervisDispatch.on("clicked", d => {
+  breadcrumb.show(d);
+  // sel_path = d;
+});
+
+hiervisDispatch.on("mouseout", d => {
+  if (sel_path) {
+    breadcrumb.show(sel_path);
+  } else {
+    breadcrumb.hide();
+  }
+  // set value next to breadcrumb
+});
 
  var dt = null;
  var tabulate1 = function (elemid, data) {
@@ -143,6 +169,8 @@ Filter minimum value: <input type="number" name="filterMin" id="filterMinVal" on
   window.addEventListener("resize", function() { 
       chart.draw();  
   } );
+
+  breadcrumb.show([{text: "Hi"}, {text:"I'm a breadcrumb"}]);
     
 </script>
 

@@ -2,7 +2,7 @@ Package: hiervis
 Title: Interactive Hierarchical Visualizations for R/Shiny
 Version: 0.1.0
 Authors@R: person("Florian P", "Breitwieser", email = "florian.bw@gmail.com", role = c("aut", "cre"), comment = c(ORCID = "0000-0001-6192-0853"))
-Description: Interactive hierarchical visualizations for R/Shiny based on d3. Supported visualizations include Sankey, Partition, Sunburst and Icicle.
+Description: Interactive hierarchical visualizations for R/Shiny based on d3. Supported visualizations include Sankey, Sunburst, Treemap, Partition and Icicle diagrams.
 BugReports: https://github.com/fbreitwieser/hiervis/issues
 URL: https://github.com/fbreitwieser/hiervis
 Depends: R (>= 3.1)

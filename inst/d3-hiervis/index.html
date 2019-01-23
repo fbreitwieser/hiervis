@@ -45,7 +45,14 @@ Filter minimum value: <input type="number" name="filterMin" id="filterMinVal" on
 </form>
 <script>
 
-    var breadcrumb = d3.breadcrumb().container('svg#breadcrumb');
+    const rectBB = d3.select("svg#breadcrumb").append('rect').attr("width", "100%").attr("height", "100%");
+    const boundingBox = rectBB.node().getBBox();
+    rectBB.remove();
+    const width = boundingBox.width;
+
+    var breadcrumb = d3.breadcrumb()    
+                       .container('svg#breadcrumb')
+                       .fontSize(12).height(25).padding(5).wrapWidth(width).top(5).marginTop(1).width(10)
     function filterChanged() {
         chart.filter(+document.getElementById('filterMinVal').value,
                      document.getElementById('filterTxt').value);
@@ -90,7 +97,7 @@ Filter minimum value: <input type="number" name="filterMin" id="filterMinVal" on
             document.getElementById('gallery').appendChild(img);
             */
         d3.tsv(reader.result).then(function(data) {
-            tabulate1("#datatable1_container", data)
+            //tabulate1("#datatable1_container", data)
 
 			 chart = hiervis(d3.select("svg#h1"), data, {
                krakenFile: true, 
@@ -150,7 +157,7 @@ hiervisDispatch.on("mouseout", d => {
   })
 
   d3.csv("data/d3.csv").then(function(data) {
-    tabulate1("#datatable1_container", data)
+    //tabulate1("#datatable1_container", data)
     chart = hiervis(d3.select("svg#h1"), data, { nameField: "path", pathSep: "/", valueField: "size", stat: "sum" });
     chart.draw("sankey");
   });

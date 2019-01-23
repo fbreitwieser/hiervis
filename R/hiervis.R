@@ -50,6 +50,15 @@ hiervis <- function(data, vis = NULL, width = NULL, height = NULL, elementId = N
                                     # Sunburst options
                                     sunburstLabelsRadiate = FALSE,
                                     circleNumberFormat = ".2s",
+                                    nodeCornerRadius = 2,
+                                    sankeyLinkOpacity = .5,
+                                    sankeyNodeSize  = NULL,
+                                    scaleWidth = FALSE,
+                                    autoScaleSankeyDist = TRUE,
+                                    sankeyAutoScaleFactor = 100,
+                                    sankeyNodeDist  = 1,
+                                    textPadding  = 1,
+                                    minText = 4,
                                     # Sankey options
                                     linkColorChild = FALSE,  # it true, color links based on child, not the parent
                                     sankeyMinHeight = NULL # if numeric, labels are only displayed when the node is above the value
@@ -60,13 +69,16 @@ hiervis <- function(data, vis = NULL, width = NULL, height = NULL, elementId = N
     vis <- "sankey"
   }
 
+  nItems <- 0
   if (is.table(data)) {
+    nItems <- length(data)
     data <- d3r::d3_nest(data.frame(data), value_cols = "Freq")
     pathSep <- NULL
     parentField <- NULL
     valueField <- "Freq"
     stat <- "sum"
   } else if (is.data.frame(data)) {
+    nItems <- nrow(data)
     if ((is.null(pathSep) && is.null(parentField)) || (!is.null(pathSep) && !is.null(parentField))) {
       stop("Specify either pathSep (+nameField) or parentField when supplying a data.frame!")
     }
@@ -74,6 +86,12 @@ hiervis <- function(data, vis = NULL, width = NULL, height = NULL, elementId = N
   } else {
     stop("Do not know how to deal with data of class ", class(data))
   }
+
+  if (isTRUE(vis.opts$autoScaleSankeyDist)) {
+    vis.opts$sankeyNodeDist = max(0.1, vis.opts$sankeyAutoScaleFactor / nItems)
+  }
+  vis.opts$autoScaleSankeyDist <- NULL
+  vis.opts$sankeyAutoScaleFactor <- NULL
 
   options <- c(list (nameField = nameField, valueField = valueField,
                 pathSep = pathSep, parentField = parentField,
@@ -93,6 +111,17 @@ hiervis <- function(data, vis = NULL, width = NULL, height = NULL, elementId = N
     elementId = elementId,
     dependencies = list(d3r::d3_dep_v4(), treecolors_dep(), hiervis_dep())
   )
+}
+
+#' @export
+goUp <- function(hiervisProxy, n) {
+  hiervisProxy$session$sendCustomMessage(paste0(hiervisProxy$id,"_goUp"), n)
+}
+
+hiervisProxy <- function(id, session = shiny::getDefaultReactiveDomain()) {
+    proxy <- list(id = id, session = session)
+    class(proxy) <- "hiervisProxy"
+    return(proxy)
 }
 
 #' from Dean Attali

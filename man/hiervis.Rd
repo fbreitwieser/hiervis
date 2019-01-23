@@ -9,8 +9,11 @@ hiervis(data, vis = NULL, width = NULL, height = NULL,
   pathSep = NULL, parentField = NULL, stat = "count",
   vis.opts = list(transitionDuration = 350, showNumbers = TRUE,
   numberFormat = ",d", treeColors = TRUE, treemapHier = TRUE,
-  sunburstLabelsRadiate = FALSE, circleNumberFormat = ".2s", linkColorChild
-  = FALSE, sankeyMinHeight = NULL))
+  sunburstLabelsRadiate = FALSE, circleNumberFormat = ".2s",
+  nodeCornerRadius = 2, sankeyLinkOpacity = 0.5, sankeyNodeSize = NULL,
+  scaleWidth = FALSE, autoScaleSankeyDist = TRUE, sankeyAutoScaleFactor =
+  100, sankeyNodeDist = 1, textPadding = 1, minText = 4, linkColorChild =
+  FALSE, sankeyMinHeight = NULL))
 }
 \arguments{
 \item{data}{tabular data or data.frame}

@@ -1,4 +1,4 @@
-/*  
+/*
 
 This code is based on following convention:
 
@@ -6,12 +6,15 @@ https://github.com/bumbeishvili/d3-coding-conventions/blob/84b538fa99e43647d0d47
 
 */
 
+
 d3.breadcrumb = function (params) {
 
   // exposed variables
   var attrs = {
     container: 'body',
     padding: 5,
+    paddingRight: 35,
+    paddingArrow: 20,
     width: 130,
     height: 28,
     top: 10,
@@ -23,6 +26,7 @@ d3.breadcrumb = function (params) {
     data: null
   };
 
+  var dispatch = d3.dispatch("mouseover", "mouseout", "clicked");
 
   //this colors are taken from metronic's color library
   var defaultColors = ["#c5bf66", "#BF55EC", "#f36a5a", "#EF4836", "#9A12B3", "#c8d046", "#E26A6A",
@@ -61,7 +65,14 @@ d3.breadcrumb = function (params) {
         var g = breadcrumbTrail.selectAll('g')
           .data(sequenceArray, d => d.id)
         g.exit().remove();
-        var entering = g.enter().append('svg:g').style('pointer-events', 'none');
+        var entering = g.enter().append('svg:g')
+          .style("cursor", "pointer")
+          .on("mouseover", d => {
+            dispatch.call("mouseover", this, sequenceArray.indexOf(d));
+          })
+          .on("click", d => {
+            dispatch.call("clicked", this, sequenceArray.indexOf(d));
+          })
 
         //arrow polygons
         entering.append("svg:polygon")
@@ -72,7 +83,7 @@ d3.breadcrumb = function (params) {
 
         //arrow texts
         var enteredText = entering.append('svg:text')
-          .attr("x", 20).attr("y", attrs.height / 2).attr("dy", "0.4em")
+          .attr("x", attrs.top*2).attr("y", attrs.height / 2).attr("dy", "0.4em")
           .attr("text-anchor", "start").attr('fill', 'white')
           .attr('font-weight', 100)
           .attr('font-size', d => {
@@ -80,7 +91,7 @@ d3.breadcrumb = function (params) {
           })
           .text(function (d) { return d.text; });
 
-        //change anchor based on arrow direction  
+        //change anchor based on arrow direction
         if (attrs.leftDirection) {
           enteredText.attr('x',10)
         }
@@ -118,18 +129,20 @@ d3.breadcrumb = function (params) {
 
           // arrows direction based on params
           if (attrs.leftDirection) {
-            poligons.attr('points', rotatedBreadcrumbPoints(d, i, arr, bbox.width + 35));
+            poligons.attr('points', rotatedBreadcrumbPoints(d, i, arr, bbox.width + attrs.paddingRight));
           } else {
-            poligons.attr('points', breadcrumbPoints(d, i, arr, bbox.width + 35));
+            poligons.attr('points', breadcrumbPoints(d, i, arr, bbox.width + attrs.paddingRight));
           }
-          startX += bbox.width + 35 + attrs.padding;
+          startX += bbox.width + attrs.paddingRight + attrs.padding;
         })
 
         //remove exited groups
         g.exit().remove();
 
         // show breadcrumbs
-        breadcrumbTrail.selectAll('.breadcrumbs').attr('visibility', '')
+        breadcrumbTrail.selectAll('.breadcrumbs')
+              .attr('visibility', '')
+
       }
 
       // build right directioned arrow from points
@@ -260,6 +273,8 @@ d3.breadcrumb = function (params) {
     }
     return main;
   }
+
+  main.dispatch = dispatch;
 
   //exposed update functions
   main.data = function (value) {

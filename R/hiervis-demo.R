@@ -15,7 +15,7 @@ hiervis_demo <- function(data = NULL, ..., title = "hiervis demo") {
   requireNamespace("datasets")
 
   dname <- deparse(substitute(data))
-  hiervis_shiny_ui <- pageWithSidebar(
+  ui <- pageWithSidebar(
     headerPanel(title),
 
     # Sidebar panel for inputs ----
@@ -31,30 +31,66 @@ hiervis_demo <- function(data = NULL, ..., title = "hiervis demo") {
                    sort(c("sankey", "sunburst", "partition", "treemap", "icicle", "vertical sankey")),
                    inline = TRUE, selected = "sankey"),
       checkboxGroupInput("cbg", "Special visualization options (parameter vis.opts)",
-                         choices = c("treeColors", "showNumbers"),
-                         selected = c("treeColors", "showNumbers")),
+                         choices = c("treeColors", "showNumbers", "scaleWidth", "autoScaleSankeyDist", "linkColorChild"),
+                         selected = c("treeColors", "showNumbers", "autoScaleSankeyDist")),
       #tags$div(id = "inline", textInput("numberFormat", "numberFormat: ", ",d")),
-      tags$div(id = "inline", numericInput("transitionDuration", "transitionDuration: ", 350, min = 0, step = 50))#,
-      #checkboxInput("linkColorChild", "linkColorChild (for sankey)", FALSE),
+      tags$div(id = "inline", numericInput("transitionDuration", "transitionDuration: ", 350, min = 0, step = 50)),
+      tags$div(id = "inline", numericInput("nodeCornerRadius", "nodeCornerRadius: ", 2, min = 0)),
+      tags$div(id = "inline", numericInput("sankeyLinkOpacity", "sankeyLinkOpacity: ", .5, min = 0, max = 1, step = .05)),
+      tags$div(id = "inline", numericInput("sankeyNodeSize", "sankeyNodeSize: ", 10, min = 2, step = 1)),
+      tags$div(id = "inline", numericInput("sankeyAutoScaleFactor", "sankeyAutoScaleFactor: ", 100, min = 1, step = 10)),
+      tags$div(id = "inline", numericInput("sankeyNodeDist", "sankeyNodeDist: ", 1, min = 0.1, step = .1)),
+      tags$div(id = "inline", numericInput("textPadding", "textPadding: ", 1, min = 0.1, step = .1)),
+      tags$div(id = "inline", numericInput("minText", "minText: ", 4, min = 0, step = .25)),
+      tags$div()
       #checkboxInput("sunburstLabelsRadiate", "sunburstLabelsRadiate (for sunburst)", FALSE)
     ),
 
     # Main panel for displaying outputs ----
     mainPanel(
+      fluidRow(breadcrumbOutput("breadcrumb")),
       fluidRow(hiervisOutput("hiervis"), style="padding-bottom: 20px;"),
       fluidRow(verbatimTextOutput("code"))
     )
   )
 
   # Define server logic to plot various variables against mpg ----
-  hiervis_shiny_server <- function(input, output) {
-    rv <- reactiveValues(val="")
+  server <- function(input, output, session) {
+
+    rv <- reactiveValues(val="", selected=NULL)
+
+    output$breadcrumb <- renderBreadcrumb({
+        req(rv$selected)
+        breadcrumb(htmlwidgets::JS(rv$selected))
+    })
+
+    observeEvent(input$hiervis_hover, {
+        rv$selected <- input$hiervis_hover
+    })
+
+    observeEvent(input$hiervis_clicked, {
+        rv$selected <- input$hiervis_clicked
+    })
+
+    observeEvent(input$breadcrumb_clicked, {
+        # does not work
+        #hiervisProxy("hiervis") %>% goUp(length(rv$selected) - input$breadcrumb_clicked)
+    })
+
     output$hiervis <- renderHiervis({
       vis.opts = list(#numberFormat = input$numberFormat,
         transitionDuration = input$transitionDuration,
-        #linkColorChild = input$linkColorChild,
+        nodeCornerRadius = input$nodeCornerRadius,
+        sankeyLinkOpacity = input$sankeyLinkOpacity,
+        sankeyNodeSize = input$sankeyNodeSize,
+        sankeyNodeDist = input$sankeyNodeDist,
+        textPadding = input$textPadding,
+        minText = input$minText,
+        autoScaleSankeyDist = input$autoScaleSankeyDist,
+        sankeyAutoScaleFactor = input$sankeyAutoScaleFactor,
+        linkColorChild = input$linkColorChild,
         #sunburstLabelsRadiate = input$sunburstLabelsRadiate,
-        treeColors = FALSE,
+        treeColors = FALSE, scaleWidth = FALSE,
         showNumbers = FALSE)
       vis.opts[input$cbg] <- TRUE
 
@@ -106,6 +142,6 @@ hiervis_demo <- function(data = NULL, ..., title = "hiervis demo") {
   }
 
 
-  shinyApp(hiervis_shiny_ui, hiervis_shiny_server)
+  shinyApp(ui, server)
 
 }

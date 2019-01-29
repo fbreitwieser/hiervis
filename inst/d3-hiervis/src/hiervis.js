@@ -786,6 +786,47 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
             if (!self.current_node) {
                 self.current_node = self.root;
             }
+            const toNext = function() {
+                    if (self.current_node.parent) {
+                        var cnpc = self.current_node.parent.children;
+                        var i = cnpc.indexOf(self.current_node);
+                        if (i < cnpc.length - 1) {
+                            mouseover(cnpc[i + 1]);
+                        } else {
+                            mouseover(cnpc[0]);
+                        }
+                    } else if (self.current_node.children) {
+                        mouseover(self.current_node.children[0])
+                    };
+            } 
+
+            const toPrevious = function() {
+                    if (self.current_node.parent) {
+                        var cnpc = self.current_node.parent.children;
+                        var i = cnpc.indexOf(self.current_node);
+                        if (i >= 1) {
+                            mouseover(cnpc[i - 1]);
+                        } else {
+                            mouseover(cnpc[cnpc.length - 1]);
+                        }
+                    } else if (self.current_node.children && self.current_node.children.length > 0) {
+                        mouseover(self.current_node.children[self.current_node.children.length - 1])
+                    };
+            }
+
+            const toChild = function() {
+                    if (self.current_node.children) {
+                        mouseover(self.current_node.children[0]);
+                    };
+            }
+
+            const toParent = function() {
+                    if (self.current_node.parent && self.current_node != self.selected_node) {
+                        mouseover(self.current_node.parent);
+                    };
+            }
+
+
             switch (keyCode) {
                 case 8: // backspace
                     if (self.selected && self.selected.parent) {
@@ -801,40 +842,16 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
                     clicked(self.root);
                     break;
                 case 37: // left
-                    if (self.current_node.parent && self.current_node != self.selected_node) {
-                        mouseover(self.current_node.parent);
-                    };
+                    horizontal? toParent() : toPrevious();
                     break; // left
                 case 38: // up
-                    if (self.current_node.parent) {
-                        var cnpc = self.current_node.parent.children;
-                        var i = cnpc.indexOf(self.current_node);
-                        if (i >= 1) {
-                            mouseover(cnpc[i - 1]);
-                        } else {
-                            mouseover(cnpc[cnpc.length - 1]);
-                        }
-                    } else if (self.current_node.children && self.current_node.children.length > 0) {
-                        mouseover(self.current_node.children[self.current_node.children.length - 1])
-                    };
+                    horizontal? toPrevious() : toParent();
                     break; // up
                 case 39: //right
-                    if (self.current_node.children) {
-                        mouseover(self.current_node.children[0]);
-                    };
+                    horizontal? toChild() : toNext();
                     break; // right
                 case 40: //down
-                    if (self.current_node.parent) {
-                        var cnpc = self.current_node.parent.children;
-                        var i = cnpc.indexOf(self.current_node);
-                        if (i < cnpc.length - 1) {
-                            mouseover(cnpc[i + 1]);
-                        } else {
-                            mouseover(cnpc[0]);
-                        }
-                    } else if (self.current_node.children) {
-                        mouseover(self.current_node.children[0])
-                    };
+                    horizontal? toNext() : toChild();
                     break; // down
                 case 68: // letter d - debug modus
                     self.opts.debug_mode = !self.opts.debug_mode;

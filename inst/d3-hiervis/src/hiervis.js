@@ -31,6 +31,7 @@ const setData = function(data, opts) {
                 d.depth = 0;
             d.name = d.taxName.replace(/^\s*/, "");
             d.name = d.name.replace(/\|/g, "_")
+          
             if (d.depth > 0) {
                 d.path = parentAtDepth[d.depth - 1] + "|" + d.name;
             } else {
@@ -158,6 +159,7 @@ const defaults = {
     sunburstLabelsRadiate: false,
     circleNumberFormat: ".2s",
     // Sankey options
+    showRank: true,
     linkColorChild: true, // it true, color links based on child, not the parent
     sankeyMinHeight: null, // if numeric, labels are only displayed when the node is above the value
     nodeCornerRadius: 2,
@@ -208,6 +210,12 @@ class HierVis {
 
     set vis(value) {
         this.opts.vis = value;
+    }
+
+    set_opt(sel, value) {
+        console.log([sel, value]);
+        this.opts[sel] = value;
+        this.draw();
     }
 
     filter(val, txt_regex) {
@@ -457,6 +465,62 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
         let nodes;
         let max_depth = 1;
 
+        const ranks = ['superkingdom', 'phylum', 'family', 'genus', 'species']
+
+        const alignRanks = function(root) {
+            var max_rank_depth;
+            var rank_nodes = [];
+            const getRankNodes = function(d, rank) {
+                if (d.data.rank === rank) {
+                    if (!max_rank_depth || d.data.depth > max_rank_depth.depth) {
+                        max_rank_depth = d;
+                    }
+                    rank_nodes.push(d);
+                } else if (d.children) {
+                    d.children.forEach(e => {
+                        getRankNodes(e, rank);
+                    });
+                }
+            }
+            const updateChildren = function(d, acc, up) {
+                d[acc] += up;
+                if (d.children) {
+                    d.children.forEach(e => {
+                        updateChildren(e, acc, up);
+                    })
+                }
+            }
+
+            ranks.forEach(rank => {
+                max_rank_depth = root;
+                rank_nodes = [];
+                getRankNodes(root, rank);
+                if (rank_nodes.length) {
+                    rank_nodes.forEach(e => {
+                        if (e.depth < max_rank_depth.depth) {
+                            const y_diff = max_rank_depth.y1 - e.y1;
+                            updateChildren(e, "y0", y_diff);
+                            updateChildren(e, "y1", y_diff);
+                        }
+                    });
+                }
+            });
+        
+            const set_y1 = function(d) {
+                if (d.children) {
+                    var min_y0;
+                    d.children.forEach(e => {
+                        if (!min_y0 || e.y0 < min_y0) {
+                            min_y0 = e.y0
+                        }
+                        set_y1(e);
+                    });
+                    //d.y1 = min_y0;
+                }
+            }
+            set_y1(root);
+        }
+
         // pads Sankey nodes - expects global 'max_y1', 'max_fact' and 'min_val' variables
         const padNodes = function(d, delta, y0, y1) {
             const y1_b4 = d[y1];
@@ -533,6 +597,7 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
             self.selected_node = self.root;
 
             if (is_sankey) {
+
                 // variables that are modified by padNodes
                 var max_fact = 1,
                     max_y1 = 0,
@@ -575,10 +640,11 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
             }
         }
 
-        const x = d3.scaleLinear()
+        const x_scale = d3.scaleLinear()
             .range([0, this.width]);
-        const y = d3.scaleLinear()
+        const y_scale = d3.scaleLinear()
             .range([0, this.height]);
+
 
         // partition group contains all nodes, links and clip paths
         //   TOCHECK: The clip paths are for the text labels. It could be that
@@ -631,9 +697,9 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
 
         const rects = function(selection, x = identity, y = identity) {
             if (is_sankey) {
-                sankey_rects(selection, x, y)
+                sankey_rects(selection, x_scale, y_scale)
             } else {
-                partition_rects(selection, x, y)
+                partition_rects(selection, x_scale, y_scale)
             }
         };
 
@@ -660,6 +726,78 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
             }
         };
 
+
+        const sankey_clip_polygons = function(selection, x_scale = identity, y_scale = identity) {
+            const point = function(x_pos, y_pos) {
+                if (horizontal) {
+                    return x_scale(x_pos) + " " + y_scale(y_pos);
+                } else {
+                    return x_scale(y_pos) + " " + y_scale(x_pos);
+
+                }
+            }
+            // TODO: Fix up horizontal vs vertical notation
+            var x0 = "y0"
+            var y0 = "x0"
+            var y1 = "x1"
+            if (true) {
+            selection.attr("points", d=> {
+                var result = point(d[x0], d[y0]);
+                if (d.children) {
+                    var start_x0 = d.children[0][x0]
+                    var start_y0 = d.children[0][y0]
+                    var i = 1;
+                    while (i < d.children.length) {
+                        if (d.children[i][x0] === start_x0) {
+                            // continue - do not put out extra node if that child is at the same distance
+                        } else {
+                            result += ", " + point(start_x0, start_y0) 
+                                   +  ", " +  point(start_x0, d.children[i-1][y1]);
+                            start_x0 = d.children[0][x0]
+                            start_y0 = d.children[0][y0]
+                        }
+                        ++i;
+                    }
+                    result += ", " + point(start_x0, start_y0) 
+                           +  ", " +  point(start_x0, d.children[i-1][y1]);
+                } else {
+                        result += ", " + point(d[x0], d[y0]) 
+                               +  ", " +  point(d[x0], d[y1])
+                }
+
+                result += "," + point(d[x0], d[y1]);
+                return(result);
+            })
+            } else {
+            selection.attr("points", d=> {
+                var result = point(y(d[y0]), x(d[x0]));
+                if (d.children) {
+                    var start_y0 = d.children[0][y0]
+                    var start_x0 = d.children[0][x0]
+                    var i = 1;
+                    while (i < d.children.length) {
+                        if (d.children[i][y0] === start_y0) {
+                            // continue - do not put out extra node if that child is at the same distance
+                        } else {
+                            result += ", " + point(y(start_y0), x(start_x0)) 
+                                   +  ", " +  point(y(start_y0), x(d.children[i-1][x1]));
+                            start_y0 = d.children[0][y0]
+                            start_x0 = d.children[0][x0]
+                        }
+                        ++i;
+                    }
+                    result += ", " + point(y(start_y0), x(start_x0)) 
+                           +  ", " +  point(y(start_y0), x(d.children[i-1][x1]));
+                } else {
+                        result += ", " + point(y(d[y0]), x(d[x0])) 
+                               +  ", " +  point(y(d[y0]), x(d[x1]))
+                }
+                result += "," + point(y(d[y0]), x(d[x1]));
+                return(result);
+            })
+            }
+        };
+
         const sankey_rects = function(selection, x = identity, y = identity) {
             selection.attr("x", d => x(d[x0]))
                 .attr("y", d => y(d[y0]))
@@ -668,7 +806,7 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
                 .attr("height", d => !horizontal ? self.opts.sankeyNodeSize : y(d[y1]) - y(d[y0]))
         }
 
-        const parent_rect = function(selection, x, y) {
+        const parent_rect = function(selection, x = identity, y = identity) {
             // Center the parent rectangle on the left side
             selection.attr("x", d => !horizontal ? Math.max(0, (self.width - x(d[x1]) + x(d[x0])) / 2) : 0)
                 .attr("y", d => horizontal ? Math.max(0, (self.height - y(d[y1]) + y(d[y0])) / 2) : 0)
@@ -717,6 +855,7 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
         }
 
         const clicked = function(d, call_dispatch = true) {
+            console.log(d);
             if (call_dispatch) {
                 self.dispatch.call("clicked", this, get_path(d));
             }
@@ -731,11 +870,11 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
                     min_x = d[x0] - d.parent[x0];
                 }
 
-                x.domain([d[x0], self.width]).range([min_x, self.width]);
+                x_scale.domain([d[x0], self.width]).range([min_x, self.width]);
                 if (is_sankey) {
-                    y.domain([d.children_min_y0, d.children_max_y1])
+                    y_scale.domain([d.children_min_y0, d.children_max_y1])
                 } else {
-                    y.domain([d[y0], d[y1]]);
+                    y_scale.domain([d[y0], d[y1]]);
                 }
             } else {
                 let min_y = d.depth ? self.height / 10 : 0;
@@ -744,41 +883,41 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
                 }
 
                 if (is_sankey && !horizontal) {
-                    x.domain([d.children_min_y0, d.children_max_y1])
+                    x_scale.domain([d.children_min_y0, d.children_max_y1])
                 } else {
-                    x.domain([d[x0], d[x1]]);
+                    x_scale.domain([d[x0], d[x1]]);
                 }
-                y.domain([d[y0], self.height]).range([min_y, self.height]);
+                y_scale.domain([d[y0], self.height]).range([min_y, self.height]);
             }
 
             if (is_sankey) {
                 sankey_cliprect_objects.transition()
                     .duration(self.opts.transitionDuration)
-                    .call(sankey_clip_rects, x, y)
+                    .call(sankey_clip_polygons, x_scale, y_scale)
 
                 sankey_path_objects.transition()
                     .duration(self.opts.transitionDuration)
-                    .call(link_me, x, y)
+                    .call(link_me, x_scale, y_scale)
                     .filter(d1 => d1.depth <= d.depth)
                     .attr("visibility", "hidden")
             }
 
             rect_objects.transition()
                 .duration(self.opts.transitionDuration)
-                .call(rects, x, y)
-                .filter(d1 => d1 === d.parent).call(parent_rect, x, y)
+                .call(rects, x_scale, y_scale)
+                .filter(d1 => d1 === d.parent).call(parent_rect, x_scale, y_scale)
 
             text_objects.transition()
                 .duration(self.opts.transitionDuration)
                 .attr("visibility", d => {
-                    return (y(d[y1]) - y(d[y0]) > self.opts.minText ? "visible" : "hidden");
+                    return (y_scale(d[y1]) - y_scale(d[y0]) > self.opts.minText ? "visible" : "hidden");
                 })
-                .call(set_texts, x, y)
+                .call(set_texts, x_scale, y_scale)
 
             if (self.opts.showNumbers && self.opts.numbersOnNextLine)
                 tspan_objects.transition()
                 .duration(self.opts.transitionDuration)
-                .call(set_tspans, x, y)
+                .call(set_tspans, x_scale, y_scale)
         }
 
         const keydown = function() {
@@ -957,8 +1096,8 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
         if (is_sankey) {
             sankey_cliprect_objects = partition_group1.append("clipPath")
                 .attr("id", (d, i) => "clip-" + i + self.ID)
-                .append("rect")
-                .call(sankey_clip_rects);
+                .append("polygon")
+                .call(sankey_clip_polygons);
 
             // add Sankey rects
             rect_objects = partition_group1.append("rect")
@@ -1182,11 +1321,11 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
             const transition = self.svg.transition()
                 .duration(self.opts.transitionDuration)
                 .tween('scale', () => {
-                    const xd = d3.interpolate(x.domain(), [d.x0, d.x1]),
+                    const xd = d3.interpolate(x_scale.domain(), [d.x0, d.x1]),
                         yd = d3.interpolate(y.domain(), [d.y0, 1]);
                     return t => {
-                        x.domain(xd(t));
-                        y.domain(yd(t));
+                        x_scale.domain(xd(t));
+                        y_scale.domain(yd(t));
                     };
                 });
 

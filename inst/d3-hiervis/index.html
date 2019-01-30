@@ -35,6 +35,13 @@ Filter minimum value: <input type="number" name="filterMin" id="filterMinVal" on
 <button class="vis">cluster</button>
 <button class="vis">cycle</button>
 <button class="switch">switch_horizontal</button>
+<input type="checkbox" class="opts">showNumbers</input>
+<input type="checkbox" class="opts">treeColors</input>
+<input type="checkbox" class="opts">simplifyPath</input>
+<input type="checkbox" class="opts">sunburstLabelsRadiate</input>
+<input type="checkbox" class="opts">showRank</input>
+<input type="checkbox" class="opts">linkColorChild</input>
+<input type="checkbox" class="opts">scaleWidth</input>
 
 <form>
     <label>text separator:</label><input type="text" name="textSep" value=","/>
@@ -104,32 +111,17 @@ Filter minimum value: <input type="number" name="filterMin" id="filterMinVal" on
                treeColors: null});
              chart.draw("vertical sankey");
 
+    chart.dispatch.on("mouseover", d => { if (d) breadcrumb.show(d); });
+    chart.dispatch.on("clicked", d => { breadcrumb.show(d); 
+  // sel_path = d;
+});
+    chart.dispatch.on("mouseout", d => { if (sel_path) { breadcrumb.show(sel_path); } else { breadcrumb.hide(); } });
              
         });
     }
     }
 
 var sel_path;
-
-hiervisDispatch.on("mouseover", d => {
-  if (d)
-    breadcrumb.show(d);
-  // set value next to breadcrumb
-});
-
-hiervisDispatch.on("clicked", d => {
-  breadcrumb.show(d);
-  // sel_path = d;
-});
-
-hiervisDispatch.on("mouseout", d => {
-  if (sel_path) {
-    breadcrumb.show(sel_path);
-  } else {
-    breadcrumb.hide();
-  }
-  // set value next to breadcrumb
-});
 
  var dt = null;
  var tabulate1 = function (elemid, data) {
@@ -151,6 +143,14 @@ hiervisDispatch.on("mouseout", d => {
     const vis = d3.select(this).text();
     chart.draw(vis);
   });
+
+  d3.selectAll('input.opts').on('click', function(){
+    const opt = d3.select(this);
+    const vis = opt.text();
+    console.log([vis,opt.property("checked")]);
+    chart.set_opt(vis, opt.property("checked"));
+    //chart.draw();
+  });
     
   d3.selectAll('button.switch').on('click', function() {
       chart.switch_horizontal();
@@ -160,6 +160,11 @@ hiervisDispatch.on("mouseout", d => {
     //tabulate1("#datatable1_container", data)
     chart = hiervis(d3.select("svg#h1"), data, { nameField: "path", pathSep: "/", valueField: "size", stat: "sum" });
     chart.draw("sankey");
+    chart.dispatch.on("mouseover", d => { if (d) breadcrumb.show(d); });
+    chart.dispatch.on("clicked", d => { breadcrumb.show(d); 
+  // sel_path = d;
+});
+    chart.dispatch.on("mouseout", d => { if (sel_path) { breadcrumb.show(sel_path); } else { breadcrumb.hide(); } });
   });
 
   function uploadFiles(files) {
@@ -170,6 +175,12 @@ hiervisDispatch.on("mouseout", d => {
             krakenFile: true, 
             treeColors: "add"});
         chart.draw("partition");
+
+    chart.dispatch.on("mouseover", d => { if (d) breadcrumb.show(d); });
+    chart.dispatch.on("clicked", d => { breadcrumb.show(d); 
+  // sel_path = d;
+});
+    chart.dispatch.on("mouseout", d => { if (sel_path) { breadcrumb.show(sel_path); } else { breadcrumb.hide(); } });
   })  
   }
     

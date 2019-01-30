@@ -91,6 +91,9 @@ d3.breadcrumb = function (params) {
           })
           .text(function (d) { return d.text; });
 
+        //enteredText.append("tspan")
+        //  .text(function (d) { return d.value; });
+
         //change anchor based on arrow direction
         if (attrs.leftDirection) {
           enteredText.attr('x',10)

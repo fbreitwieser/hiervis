@@ -35,13 +35,13 @@ Filter minimum value: <input type="number" name="filterMin" id="filterMinVal" on
 <button class="vis">cluster</button>
 <button class="vis">cycle</button>
 <button class="switch">switch_horizontal</button>
-<input type="checkbox" class="opts">showNumbers</input>
-<input type="checkbox" class="opts">treeColors</input>
-<input type="checkbox" class="opts">simplifyPath</input>
-<input type="checkbox" class="opts">sunburstLabelsRadiate</input>
-<input type="checkbox" class="opts">showRank</input>
-<input type="checkbox" class="opts">linkColorChild</input>
-<input type="checkbox" class="opts">scaleWidth</input>
+<input type="checkbox" class="opts" label="showNumbers">showNumbers</input>
+<input type="checkbox" class="opts" label="treeColors">treeColors</input>
+<input type="checkbox" class="opts" label="simplifyPath">simplifyPath</input>
+<input type="checkbox" class="opts" label="sunburstLabelsRadiate">sunburstLabelsRadiate</input>
+<input type="checkbox" class="opts" label="showRank">showRank</input>
+<input type="checkbox" class="opts" label="linkColorChild">linkColorChild</input>
+<input type="checkbox" class="opts" label="scaleWidth">scaleWidth</input>
 
 <form>
     <label>text separator:</label><input type="text" name="textSep" value=","/>
@@ -51,7 +51,7 @@ Filter minimum value: <input type="number" name="filterMin" id="filterMinVal" on
     <input type="file" id="fileInput" onchange="uploadFiles(this.files)" />
 </form>
 <script>
-
+var chart;
     const rectBB = d3.select("svg#breadcrumb").append('rect').attr("width", "100%").attr("height", "100%");
     const boundingBox = rectBB.node().getBBox();
     rectBB.remove();
@@ -146,9 +146,7 @@ var sel_path;
 
   d3.selectAll('input.opts').on('click', function(){
     const opt = d3.select(this);
-    const vis = opt.text();
-    console.log([vis,opt.property("checked")]);
-    chart.set_opt(vis, opt.property("checked"));
+    chart.set_opt(opt.attr("label"), opt.property("checked"));
     //chart.draw();
   });
     

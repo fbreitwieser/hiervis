@@ -42,6 +42,8 @@ const setData = function(data, opts) {
         data = data.filter(d => d.path.startsWith("root"))
         opts.pathSep = "|";
         opts.nameField = "path";
+        //opts.valueField = "reads";
+        //opts.stat = "identity";
         opts.valueField = "taxReads";
         opts.stat = "sum";
     }
@@ -80,7 +82,34 @@ const setData = function(data, opts) {
         root = d3.hierarchy(data);
     }
 
-    if (opts.simplifyPath) {
+    ["nameField", "valueField"].forEach(prop => {
+        if (!root.children[0].data.hasOwnProperty(opts[prop])) {
+            console.log("Data doesn't have property "+opts[prop]+"!")
+            console.log(root)
+        }
+    })
+
+    switch (opts.stat) {
+        case "sum":
+            root.sum(d => typeof d[opts.valueField] !== undefined ? d[opts.valueField] : 0);
+            break;
+        case "count":
+            root.count();
+            break;
+        default: //identity by default
+            // TODO: Is this necessary when valueField is 'value',
+            //       or does d3.hierachy() copy it over?
+            if (opts.valueField !== "value") {
+                root.each(d => {
+                    d.value = d.data[opts.valueField]
+                });
+            }
+            root.value = d3.sum(root.children, d => d.value);
+            break;
+    }
+
+    if (opts.simplifyPath && opts.krakenFile) {
+        const ranks = ['superkingdom', 'phylum', 'family', 'genus', 'species']
         const removeUselessNode = function(node, negative_depth) {
             node.depth -= negative_depth;
             if (!node.children) {
@@ -105,7 +134,53 @@ const setData = function(data, opts) {
             node.height = max_depth;
             return max_depth;
         }
-        removeUselessNode(root, 0);
+        const addToParents = function(parent, val) {
+            parent.value += val
+            if (parent.parent) {
+                addToParents(parent.parent, val)
+            }
+        }
+
+        const removeNonRanks = function(node) {
+            if (!node.children) {
+                return;
+            }
+
+            if (node.parent &&
+                !ranks.includes(node.data.rank)) {
+
+                const node_i = node.parent.children.indexOf(node)
+
+                if (node.children) {
+                    // move node's children into parent!
+                    node.parent.children.splice(node_i, 1, ...node.children)
+
+                    node.children.forEach(d => {
+                        d.parent = node.parent;
+                    })
+                } else {
+                    if (node.parent.children.length == 1) {
+                        delete node.parent.children;
+                    } else {
+                        node.parent.children = node.parent.children.slice(node_i);
+                    }
+                }
+                if (node.value > 0) {
+                    //node.parent.value += node.value
+                    //addToParents(node.parent, node.value);
+                }
+            }
+        }
+        const fix_depths = function(d, depth) {
+            d.depth = depth
+            if (d.children) {
+                d.children.forEach(e => { fix_depths(e, depth+1) } )
+            }
+        }
+
+        root.each(removeNonRanks)
+        //removeNonRanks(root, 0);
+        fix_depths(root, 0)
         // TODO: Fix height
     }
 
@@ -115,22 +190,6 @@ const setData = function(data, opts) {
         tcol(root)
     }
 
-    switch (opts.stat) {
-        case "sum":
-            root.sum(d => typeof d[opts.valueField] !== undefined ? d[opts.valueField] : 0);
-            break;
-        case "count":
-            root.count();
-            break;
-        default: //identity by default
-            // TODO: Is this necessary when valueField is 'value',
-            //       or does d3.hierachy() copy it over?
-            root.each(node => {
-                node.value = node.data[opts.valueField]
-            });
-            root.value = d3.sum(root.children, d => d.value);
-            break;
-    }
     root.data[opts.nameField] = opts.rootName;
     return root;
 }
@@ -152,7 +211,7 @@ const defaults = {
     showNumbers: true,
     treeColors: true,
     krakenFile: false,
-    simplifyPath: false, // Remove nodes without a value, and only one child
+    simplifyPath: true, // Remove nodes without a value, and only one child
     // Treemap options
     treemapHier: true,
     // Sunburst options
@@ -160,14 +219,15 @@ const defaults = {
     circleNumberFormat: ".2s",
     // Sankey options
     sankeyLinkDist: 0,
+    sankeyNoRoot: false,
     showRank: true,
-    linkColorChild: true, // it true, color links based on child, not the parent
+    linkColorChild: false, // it true, color links based on child, not the parent
     sankeyMinHeight: null, // if numeric, labels are only displayed when the node is above the value
     nodeCornerRadius: 2,
     sankeyLinkOpacity: .5,
     sankeyNodeSize: 10,
     scaleWidth: false, // scale width in horizontal Sankey based on text width - experimental and buggy
-    sankeyNodeDist: .5,
+    sankeyNodeDist: 2,
     textPadding: 1,
     minText: 4,
     // Stratify options
@@ -215,6 +275,10 @@ class HierVis {
 
     set_opt(sel, value) {
         this.opts[sel] = value;
+        if (sel == "treeColors" && value) {
+            const tcol = TreeColors("add");
+            tcol(this.root)
+        }
         this.draw();
     }
 
@@ -267,7 +331,11 @@ class HierVis {
                         changed_nodes += 1
                     }
                 }
-                node.children = children_new;
+                if (children_new.length) {
+                    node.children = children_new;
+                } else {
+                    delete node.children;
+                }
             }
         }
 
@@ -355,6 +423,14 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
   stroke: #555;
   stroke-opacity: 0.4;
   stroke-width: 1.5px;
+}
+
+text.selected {
+  text-shadow: 0 0 2px #fff;
+}
+
+text.hidden {
+  opacity: .1;
 }
 
 `);
@@ -533,8 +609,8 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
             // Save the minimum y0 and maximum y1 for zooming and clipping purposes
             d[y0] += delta;
             d[y1] += delta;
-            d.children_min_y0 = d[y0]
-            d.children_max_y1 = d[y1]
+            d.lower_bound = d[y0]
+            d.upper_bound = d[y1]
             if (d.children) {
                 const delta_start = delta;
                 d.children.forEach((e, i) => {
@@ -556,7 +632,7 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
                     const shift_delta = delta / 2 - delta_start / 2;
                     d[y0] += shift_delta
                     d[y1] += shift_delta;
-                    d.children_max_y1 = max_y1;
+                    d.upper_bound = max_y1;
                 } else {
                     delta = delta_start // + self.opts.sankeyNodeDist/2;
                 }
@@ -614,17 +690,6 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
                     min_val = this.root.value / 100;
 
                 padNodes(this.root, 0, "x0", "x1")
-
-                // Scale the sizes to fit the window
-                /*
-                this.root.each(d => {
-                    d["x0_orig"] = d["x0"]
-                    d["x1_orig"] = d["x1"]
-                    d["x0"] /= max_fact
-                    d["x1"] /= max_fact
-                    d.children_min_y0 /= max_fact
-                    d.children_max_y1 /= max_fact
-                })*/
             }
 
             nodes = this.root.descendants();
@@ -634,9 +699,6 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
                 d.h = d[y1] - d[y0];
                 d._unique_id = i;
                 d.children_x0s = 0;
-                if (d.children) {
-                  d.min_child_y0 = d.children[0].y0;
-                }
             })
             if (is_sankey) {
                 nodes.forEach(d => {
@@ -646,11 +708,7 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
 
                     }
                     if (d.children) {
-                        d.children.forEach(e => {
-                            if (e.y0 < d.min_child_y0) {
-                                d.min_child_y0 = e.y0;
-                            }
-                        })
+                        d.children_min_y0 = d3.min(d.children, e => e.y0)
                     }
                 })
 
@@ -706,21 +764,28 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
             .range([0, self.extent_y]).domain([0, self.extent_y]);
         */
 
+        var min_y = self.opts.sankeyNoRoot? self.root.children_min_y0 : 0
+
         const x_scale = d3.scaleLinear()
-            .range([0, self.extent_x]).domain([0, self.max_x1]);
+            .range([0, self.extent_x]).domain([self.opts.horizontal? 0 : min_y, self.max_x1]);
         const y_scale = d3.scaleLinear()
-            .range([0, self.extent_y]).domain([0, self.max_y1]);
+            .range([0, self.extent_y]).domain([self.opts.horizontal? min_y : 0, self.max_y1]);
 
 
 
         // Enter partition and texts
-        const partition_group1 =
+        var partition_group1 =
             partition_group.selectAll("g")
             .data(nodes).enter().append("g")
 
-        const text_group1 =
+        var text_group1 =
             text_group.selectAll("text")
             .data(nodes).enter().append("text")
+
+        if (self.opts.sankeyNoRoot) {
+            text_group1 = text_group1.filter(d => d.parent)
+            partition_group1 = partition_group1.filter(d => d.parent)
+        }
 
         // HELPER FUNCTIONS start ///
         const identity = function(d) {
@@ -766,15 +831,15 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
             if (horizontal) {
                 selection
                     .attr("x", d => x(d[x0]))
-                    .attr("y", d => y(d.children_min_y0 - self.opts.sankeyNodeDist / 4))
+                    .attr("y", d => y(d.lower_bound - self.opts.sankeyNodeDist / 4))
                     .attr("width", d => (d.children && d.children.length) ? x(d[x1]) - x(d[x0]) : self.width)
-                    .attr("height", d => d.children ? y(d.children_max_y1 + self.opts.sankeyNodeDist / 2) - y(d.children_min_y0) : self.height)
+                    .attr("height", d => d.children ? y(d.upper_bound + self.opts.sankeyNodeDist / 2) - y(d.lower_bound) : self.height)
             } else {
                 selection
-                    .attr("x", d => x(d.children_min_y0 - self.opts.sankeyNodeDist / 4))
+                    .attr("x", d => x(d.lower_bound - self.opts.sankeyNodeDist / 4))
                     .attr("y", d => y(d[y0]))
                     .attr("height", d => (d.children && d.children.length) ? y(d[y1]) - y(d[y0]) : self.width)
-                    .attr("width", d => x(d.children_max_y1 + self.opts.sankeyNodeDist / 2) - x(d.children_min_y0))
+                    .attr("width", d => x(d.upper_bound + self.opts.sankeyNodeDist / 2) - x(d.lower_bound))
             }
         };
 
@@ -790,7 +855,8 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
             }
 
             selection.attr("points", d=> {
-                var start_x0 = d.children? d.children[0].x0 : d.x0;
+                var start_x0 = d.lower_bound - self.opts.sankeyNodeDist/2;
+                var end_x1 = d.upper_bound + self.opts.sankeyNodeDist/2;
                 var points = [point(start_x0, d.y0)];
                 if (d.children) {
                     var child_y0 = d.children[0].y0
@@ -820,7 +886,7 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
                     points.push(point(d.x0, d.y1),
                                 point(d.x1, d.y1))
                 }
-                points.push(point(d.x1, d.y0));
+                points.push(point(end_x1, d.y0));
                 return(points.join(","));
             })
             
@@ -847,6 +913,7 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
 
         const mouseout = function(d) {
             self.dispatch.call("mouseover", this, get_path(self.selected));
+            //d3.selectAll('text.hidden').classed('hidden', false)
         }
 
         const get_path = function(d) {
@@ -857,19 +924,38 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
                     //.transition()
                     //.duration(self.opts.transitionDuration / 10)
                     .attr("class", "selected");
+/*
+                text_group1
+                    .filter(d1 => d1 == d)
+                    .attr("visibility", "null")
+                    //.transition()
+                    //.duration(self.opts.transitionDuration / 10)
+                    .attr("class", "selected");*/
             }
             if (!d) {
                 return;
             }
-            d3.selectAll('g.selected').classed('selected', false)
-
             var col = self._color(d).toString();
             var path = [{
                 text: d.data[self.opts.nameField] + " " + self.formatNumber(d.value),
                 fill: col
             }];
-            update_node(d);
 
+            self.last_selected = d
+
+            d3.selectAll('g.selected').classed('selected', false)
+            d3.selectAll('text.selected').classed('selected', false)
+            //d3.selectAll('text.selected').classed('hidden', false)
+/*
+            text_group1
+                    //.attr("class", "hidden")
+                    .attr("clip-path", (_, i) => "url(#clip-" + i + self.ID + ")")
+                   .filter(d1 => d1 == d)
+                   .attr("visibility", null)
+                   .attr("clip-path", null)
+*/
+
+            update_node(d);
             while (d.parent) {
                 d = d.parent;
                 update_node(d);
@@ -901,7 +987,8 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
 
                 x_scale.domain([d[x0], self.max_x1]).range([min_x, self.extent_x]);
                 if (is_sankey) {
-                    y_scale.domain([d.children_min_y0, d.children_max_y1])
+                    console.log(d)
+                    y_scale.domain([d.lower_bound, d.upper_bound])
                 } else {
                     y_scale.domain([d[y0], d[y1]]);
                 }
@@ -912,7 +999,7 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
                 }
 
                 if (is_sankey && !horizontal) {
-                    x_scale.domain([d.children_min_y0, d.children_max_y1])
+                    x_scale.domain([d.lower_bound, d.upper_bound])
                 } else {
                     x_scale.domain([d[x0], d[x1]]);
                 }
@@ -939,7 +1026,7 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
             text_objects.transition()
                 .duration(self.opts.transitionDuration)
                 .attr("visibility", d => {
-                    return (y_scale(d[y1]) - y_scale(d[y0]) > self.opts.minText ? "visible" : "hidden");
+                    return (y_scale(d[y1]) - y_scale(d[y0]) > self.opts.minText ? null : "hidden");
                 })
                 .call(set_texts, x_scale, y_scale)
 
@@ -1051,11 +1138,14 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
 
             selection
                 .attr("visibility", null)
-                .filter(d => d.parent)
+                .filter(d => d.parent && (!self.opts.sankeyNoRoot || d.parent.parent))
                 .attr('d', d => {
-                    var min_sibling_y0 = d.parent.min_child_y0;
+                    var min_sibling_y0 = d.parent.children_min_y0;
 
                     const width = x_scale(d.x1) - x_scale(d.x0)
+
+                    // Is one of the siblings of this nodes closer to the parent node
+                    //  than this one? If yes, be sure to add an extra distance columns
                     const diff_y0 = y_scale(d.y0) - y_scale(min_sibling_y0);
 
                     var link = lh({
@@ -1163,7 +1253,7 @@ g.labels.sankey.horizontal text { /* dominant-baseline: middle; not working in S
 
         /*    if (is_sankey) {
                 text
-                    .filter(d => d.children_max_y1 - d.children_min_y0 < 10)
+                    .filter(d => d.upper_bound - d.lower_bound < 10)
                     .attr("visibility", "hidden")
             }*/
 

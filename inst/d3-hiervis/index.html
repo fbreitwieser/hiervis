@@ -19,10 +19,10 @@ td { font-size: 11px; }
     </form>
     <div id='gallery'></div>
 </div>
-Filter: <input type="text" name="filter" id="filterTxt" oninput="filterChanged()" />
+Filter: <input type="text" name="filter" id="filterTxt" oninput="filterChanged()" value="Homo sapiens|synthetic construct"/>
 Filter minimum value: <input type="number" name="filterMin" id="filterMinVal" oninput="filterChanged()" />
 <svg id="breadcrumb" width="100%" height="50"> </svg>
-<svg id="h1" width="100%" height="400"> </svg>
+<svg id="h1" width="100%" height="700"> </svg>
 <div id="datatable1_container">
 </div>
 <button class="vis">sankey</button>
@@ -42,6 +42,8 @@ Filter minimum value: <input type="number" name="filterMin" id="filterMinVal" on
 <input type="checkbox" class="opts" label="showRank">showRank</input>
 <input type="checkbox" class="opts" label="linkColorChild">linkColorChild</input>
 <input type="checkbox" class="opts" label="scaleWidth">scaleWidth</input>
+
+<input type="text" class="opts_numeric" label="sankeyNodeDist" value=1>sankeyNodeDist</input>
 
 <form>
     <label>text separator:</label><input type="text" name="textSep" value=","/>
@@ -109,7 +111,10 @@ var chart;
 			 chart = hiervis(d3.select("svg#h1"), data, {
                krakenFile: true, 
                treeColors: null});
-             chart.draw("vertical sankey");
+
+        chart.filter(+document.getElementById('filterMinVal').value,
+                     document.getElementById('filterTxt').value);
+             chart.draw("sankey");
 
     chart.dispatch.on("mouseover", d => { if (d) breadcrumb.show(d); });
     chart.dispatch.on("clicked", d => { breadcrumb.show(d); 
@@ -149,6 +154,13 @@ var sel_path;
     chart.set_opt(opt.attr("label"), opt.property("checked"));
     //chart.draw();
   });
+
+  d3.selectAll('input.opts_numeric').on('input', function(){
+    const opt = d3.select(this);
+      console.log(opt)
+    chart.set_opt(opt.attr("label"), +opt.property("value"));
+    //chart.draw();
+  });
     
   d3.selectAll('button.switch').on('click', function() {
       chart.switch_horizontal();
@@ -172,6 +184,9 @@ var sel_path;
        chart = hiervis(d3.select("svg#h1"), data, {
             krakenFile: true, 
             treeColors: "add"});
+
+        chart.filter(+document.getElementById('filterMinVal').value,
+                     document.getElementById('filterTxt').value);
         chart.draw("partition");
 
     chart.dispatch.on("mouseover", d => { if (d) breadcrumb.show(d); });

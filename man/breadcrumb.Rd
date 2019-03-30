@@ -4,7 +4,7 @@
 \alias{breadcrumb}
 \title{Breadcrumbs!}
 \usage{
-breadcrumb(data, width = NULL, height = NULL, elementId = NULL,
+breadcrumb(data, width = NULL, height = "50px", elementId = NULL,
   opts = list(padding = 5, width = 130, height = 28, top = 10, fontSize =
   12, marginLeft = 0, marginTop = 10, leftDirection = FALSE, wrapWidth =
   0))

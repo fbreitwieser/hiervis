@@ -26,7 +26,11 @@ hiervis_demo <- function(data = NULL, ..., title = "hiervis demo") {
                    #code{font-size:10px; background: ghostwhite; padding-top: 10px}")
       ),
       { if (is.null(data)) radioButtons("dataset", "Dataset:",
-                                        c("Titanic (table)"="Titanic", "HairEyeColor"="HairEyeColor", "d3_modules (data.frame with path)"="d3_modules", "data.frame example with parent-child columns"="df_parentchild"), selected = "HairEyeColor") },
+                                        c("Titanic (table)"="Titanic",
+                                          "HairEyeColor"="HairEyeColor",
+                                          "d3_modules (data.frame with path)"="d3_modules",
+                                          "Microbial profile"="microbial_profile",
+                                          "data.frame example with parent-child columns"="df_parentchild"), selected = "HairEyeColor") },
       radioButtons("vis", "Visualization type (parameter vis):",
                    sort(c("sankey", "sunburst", "partition", "treemap", "icicle", "vertical sankey")),
                    inline = TRUE, selected = "sankey"),
@@ -116,6 +120,9 @@ hiervis_demo <- function(data = NULL, ..., title = "hiervis demo") {
           vis.opts = %s)'
           res <- hiervis(hiervis::d3_modules, input$vis, nameField = "path", pathSep = "/", valueField = "size",
                          stat = "sum", vis.opts = vis.opts)
+        } else if (input$dataset == "microbial_profile") {
+          vis.opts$krakenFile <- TRUE
+          res <- hiervis(microbial_profile, input$vis, vis.opts)
         } else {
           call <- 'data <- data.frame(name = c("Root Node", "Node A", "Node B", "Leaf Node A.1", "Leaf Node A.2"),
                              parent = c(NA, "Root Node", "Root Node", "Node A", "Node A"))

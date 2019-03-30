@@ -6,7 +6,7 @@
 \alias{renderBreadcrumb}
 \title{Shiny bindings for breadcrumb}
 \usage{
-breadcrumbOutput(outputId, width = "100\%", height = "10px")
+breadcrumbOutput(outputId, width = "100\%", height = "50px")
 
 renderBreadcrumb(expr, env = parent.frame(), quoted = FALSE)
 }

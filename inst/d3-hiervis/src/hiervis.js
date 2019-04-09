@@ -206,6 +206,7 @@ const defaults = {
     buttons: false, // show buttons to switch layout
     transitionDuration: 100,
     numberFormat: ",d",
+    breadcrumbs: true,
     debug_mode: false,
     // General options
     showNumbers: true,
@@ -603,6 +604,16 @@ text.hidden {
             //set_y1(root);
         }
 
+        const shiftNodes = function(d, delta, y0, y1) {
+            d[y0] += delta;
+            d[y1] += delta;
+            if (d.children) {
+                d.children.forEach((e, i) => {
+                    shiftNodes(e, delta, y0, y1)
+                })
+            }
+        }
+
         // pads Sankey nodes - expects global 'max_y1', 'max_fact' and 'min_val' variables
         const padNodes = function(d, delta, y0, y1) {
             const y1_b4 = d[y1];
@@ -617,23 +628,30 @@ text.hidden {
                     delta = padNodes(e, delta, y0, y1)
                     if (i < d.children.length - 1) {
                         delta += self.opts.sankeyNodeDist;
-                        //delta += e.children && e.children.length? self.opts.sankeyNodeDist/2 : self.opts.sankeyNodeDist;
-                        //if (e.value > min_val) {
-                        //  delta += self.opts.sankeyNodeDist;
-                        //} else {
-                        //  delta += 0.1;
-                        //}
                     }
                 })
 
                 // Set parent at the middle
-                if (max_y1 > d[y1]) {
+                var y1_diff = d[y1] - max_y1
+                if (y1_diff < 0) {
                     delta = max_y1 - d[y1] + delta_start;
                     const shift_delta = delta / 2 - delta_start / 2;
                     d[y0] += shift_delta
                     d[y1] += shift_delta;
                     d.upper_bound = max_y1;
                 } else {
+                    var shiftDelta = self.opts.sankeyNodeDist
+                    if (y1_diff > self.opts.sankeyNodeDist) {
+                    console.log(["meh", y1_diff])
+                    // TODO meeeeeeeh
+                        //
+                    for (let i = 1; i < d.children.length; ++i) {
+                    d.children.forEach((e, i) => {
+                        if (y1_diff > shiftDelta) {
+                            shiftNodes(d.children[, shiftDelta, y0, y1)
+                            shiftDelta += self.opts.sankeyNodeDist;
+                        }})
+                    }
                     delta = delta_start // + self.opts.sankeyNodeDist/2;
                 }
             }

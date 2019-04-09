@@ -52,9 +52,9 @@ hiervis_demo <- function(data = NULL, ..., title = "hiervis demo") {
 
     # Main panel for displaying outputs ----
     mainPanel(
-      fluidRow(breadcrumbOutput("breadcrumb")),
-      fluidRow(hiervisOutput("hiervis"), style="padding-bottom: 20px;"),
-      fluidRow(verbatimTextOutput("code"))
+      #fluidRow(breadcrumbOutput("breadcrumb")),
+      fluidRow(verbatimTextOutput("code")),
+      fluidRow(hiervisOutput("hiervis"), style="padding-bottom: 20px;")
     )
   )
 
@@ -63,10 +63,10 @@ hiervis_demo <- function(data = NULL, ..., title = "hiervis demo") {
 
     rv <- reactiveValues(val="", selected=NULL)
 
-    output$breadcrumb <- renderBreadcrumb({
-        req(rv$selected)
-        breadcrumb(htmlwidgets::JS(rv$selected))
-    })
+    #output$breadcrumb <- renderBreadcrumb({
+    #    req(rv$selected)
+    #    breadcrumb(htmlwidgets::JS(rv$selected))
+    #})
 
     observeEvent(input$hiervis_hover, {
         rv$selected <- input$hiervis_hover
@@ -76,10 +76,10 @@ hiervis_demo <- function(data = NULL, ..., title = "hiervis demo") {
         rv$selected <- input$hiervis_clicked
     })
 
-    observeEvent(input$breadcrumb_clicked, {
+    #observeEvent(input$breadcrumb_clicked, {
         # does not work
         #hiervisProxy("hiervis") %>% goUp(length(rv$selected) - input$breadcrumb_clicked)
-    })
+    #})
 
     output$hiervis <- renderHiervis({
       vis.opts = list(#numberFormat = input$numberFormat,
@@ -122,7 +122,10 @@ hiervis_demo <- function(data = NULL, ..., title = "hiervis demo") {
                          stat = "sum", vis.opts = vis.opts)
         } else if (input$dataset == "microbial_profile") {
           vis.opts$krakenFile <- TRUE
-          res <- hiervis(microbial_profile, input$vis, vis.opts)
+          call <-
+            'hiervis(microbial_profile, "%s", 
+          vis.opts = %s)'
+          res <- hiervis(microbial_profile, input$vis, vis.opts=vis.opts)
         } else {
           call <- 'data <- data.frame(name = c("Root Node", "Node A", "Node B", "Leaf Node A.1", "Leaf Node A.2"),
                              parent = c(NA, "Root Node", "Root Node", "Node A", "Node A"))

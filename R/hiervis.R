@@ -1,3 +1,28 @@
+hiervis_default_opts <-
+    list(transitionDuration=350,
+         showNumbers = TRUE,
+         numberFormat = ",d",
+         treeColors = TRUE,
+         # Treemap options
+         treemapHier = TRUE,
+         # Sunburst options
+         sunburstLabelsRadiate = FALSE,
+         circleNumberFormat = ".2s",
+         nodeCornerRadius = 2,
+         sankeyLinkOpacity = .5,
+         sankeyNodeSize  = 10,
+         scaleWidth = FALSE,
+         autoScaleSankeyDist = TRUE,
+         sankeyAutoScaleFactor = 100,
+         sankeyNodeDist  = 1,
+         textPadding  = 1,
+         minText = 4,
+         # Sankey options
+         linkColorChild = FALSE,  # it true, color links based on child, not the parent
+         sankeyMinHeight = NULL # if numeric, labels are only displayed when the node is above the value
+)          
+
+
 #' Create a hierarchical visualization from tabular data and data.frames
 #'
 #' This function can create a variety of interactive d3 visualizations from tables and
@@ -20,6 +45,28 @@
 #' @param valueField field in data that has quantitative values
 #' @param stat a statistic to calculate the value, e.g. "count"
 #' @param vis.opts additional parameters given to the javascript hiervis function
+#'   Default options:
+#'     list(transitionDuration=350,
+#'          showNumbers = TRUE,
+#'          numberFormat = ",d",
+#'          treeColors = TRUE,
+#'          # Treemap options
+#'          treemapHier = TRUE,
+#'          # Sunburst options
+#'          sunburstLabelsRadiate = FALSE,
+#'          circleNumberFormat = ".2s",
+#'          nodeCornerRadius = 2,
+#'          sankeyLinkOpacity = .5,
+#'          sankeyNodeSize  = 10,
+#'          scaleWidth = FALSE,
+#'          autoScaleSankeyDist = TRUE,
+#'          sankeyAutoScaleFactor = 100,
+#'          sankeyNodeDist  = 1,
+#'          textPadding  = 1,
+#'          minText = 4,
+#'          # Sankey options
+#'          linkColorChild = FALSE,  # it true, color links based on child, not the parent
+#'          sankeyMinHeight = NULL # if numeric, labels are only displayed when the node is above the value
 #'
 #' @import htmlwidgets
 #'
@@ -40,29 +87,7 @@
 #' hiervis(data, "sankey", nameField = "name", parentField = "parent", stat = "count")
 hiervis <- function(data, vis = NULL, width = NULL, height = NULL, elementId = NULL,
                     nameField = "name", valueField = "value",
-                    pathSep = NULL, parentField = NULL, stat = "count",
-                    vis.opts = list(transitionDuration=350,
-                                    showNumbers = TRUE,
-                                    numberFormat = ",d",
-                                    treeColors = TRUE,
-                                    # Treemap options
-                                    treemapHier = TRUE,
-                                    # Sunburst options
-                                    sunburstLabelsRadiate = FALSE,
-                                    circleNumberFormat = ".2s",
-                                    nodeCornerRadius = 2,
-                                    sankeyLinkOpacity = .5,
-                                    sankeyNodeSize  = NULL,
-                                    scaleWidth = FALSE,
-                                    autoScaleSankeyDist = TRUE,
-                                    sankeyAutoScaleFactor = 100,
-                                    sankeyNodeDist  = 1,
-                                    textPadding  = 1,
-                                    minText = 4,
-                                    # Sankey options
-                                    linkColorChild = FALSE,  # it true, color links based on child, not the parent
-                                    sankeyMinHeight = NULL # if numeric, labels are only displayed when the node is above the value
-                    )) {
+                    pathSep = NULL, parentField = NULL, stat = "count", vis.opts = NULL) {
 
   if (is.null(vis)) {
     message("vis parameter empty - displaying 'sankey'")
@@ -79,14 +104,23 @@ hiervis <- function(data, vis = NULL, width = NULL, height = NULL, elementId = N
     stat <- "sum"
   } else if (is.data.frame(data)) {
     nItems <- nrow(data)
+    if (is.null(vis.opts) || !isTRUE(vis.opts$krakenFile)) {
     if ((is.null(pathSep) && is.null(parentField)) || (!is.null(pathSep) && !is.null(parentField))) {
-      stop("Specify either pathSep (+nameField) or parentField when supplying a data.frame!")
+      stop("Specify either pathSep or parentField when supplying a data.frame!")
+    }
     }
     data = dataframeToD3(data)
   } else {
     stop("Do not know how to deal with data of class ", class(data))
   }
 
+  if (is.null(vis.opts)) {
+    vis.opts <- hiervis_default_opts
+  } else {
+    vis.opts1 <- vis.opts
+    vis.opts <- hiervis_default_opts
+    vis.opts[names(vis.opts1)] <- vis.opts1
+  }
   if (isTRUE(vis.opts$autoScaleSankeyDist)) {
     vis.opts$sankeyNodeDist = max(0.1, vis.opts$sankeyAutoScaleFactor / nItems)
   }
@@ -109,7 +143,7 @@ hiervis <- function(data, vis = NULL, width = NULL, height = NULL, elementId = N
     height = height,
     package = 'hiervis',
     elementId = elementId,
-    dependencies = list(d3r::d3_dep_v4(), treecolors_dep(), hiervis_dep())
+    dependencies = list(d3r::d3_dep_v4(), treecolors_dep(), hiervis_dep(), breadcrumb_dep())
   )
 }
 

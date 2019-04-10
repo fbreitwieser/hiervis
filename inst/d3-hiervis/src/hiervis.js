@@ -642,15 +642,17 @@ text.hidden {
                 } else {
                     var shiftDelta = self.opts.sankeyNodeDist
                     if (y1_diff > self.opts.sankeyNodeDist) {
-                    console.log(["meh", y1_diff])
-                    // TODO meeeeeeeh
+                        console.log(["meh", y1_diff])
+                        // TODO meeeeeeeh
                         //
-                    for (let i = 1; i < d.children.length; ++i) {
-                    d.children.forEach((e, i) => {
-                        if (y1_diff > shiftDelta) {
-                            shiftNodes(d.children[, shiftDelta, y0, y1)
-                            shiftDelta += self.opts.sankeyNodeDist;
-                        }})
+                        for (let i = 1; i < d.children.length; ++i) {
+                          d.children.forEach((e, i) => {
+                            if (y1_diff > shiftDelta) {
+                              shiftNodes(d.children, shiftDelta, y0, y1)
+                              shiftDelta += self.opts.sankeyNodeDist;
+                            }
+                          })
+                        }
                     }
                     delta = delta_start // + self.opts.sankeyNodeDist/2;
                 }

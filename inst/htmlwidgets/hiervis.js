@@ -20,7 +20,7 @@ HTMLWidgets.widget({
         var wrapWidth = 1000;
         var sel_path;
 
-        const isShiny = typeof Shiny !== "undefined"  
+        const isShiny = typeof Shiny !== "undefined";
 
         return {
             renderValue: function(x) {
@@ -53,7 +53,6 @@ HTMLWidgets.widget({
                     console.log("chart.dispatch is NULL");
                     console.log(chart)
                 }
-
                 var breadcrumb = d3.breadcrumb()    
                     .container(breadcrumb_svg)
                     .fontSize(12).height(25).padding(5).wrapWidth(1000)

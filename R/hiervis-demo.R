@@ -125,7 +125,7 @@ hiervis_demo <- function(data = NULL, ..., title = "hiervis demo") {
           call <-
             'hiervis(microbial_profile, "%s", 
           vis.opts = %s)'
-          res <- hiervis(microbial_profile, input$vis, vis.opts=vis.opts)
+          res <- hiervis(hiervis::microbial_profile, input$vis, vis.opts=vis.opts)
         } else {
           call <- 'data <- data.frame(name = c("Root Node", "Node A", "Node B", "Leaf Node A.1", "Leaf Node A.2"),
                              parent = c(NA, "Root Node", "Root Node", "Node A", "Node A"))

@@ -17,14 +17,27 @@ const setData = function(data, opts) {
     'use strict';
     let root;
     if (opts.krakenFile) {
-        const parentAtDepth = Array(100).fill("")
         if (!data[1]) {
             throw new Error("ERROR - no data.");
         }
-        if (!data[1].taxName) {
-            throw new Error("Doesn't seem to be a KrakenHLL report - required columns are not present.");
+        if (!(data[1].taxName || (opts.pavian && data[1].name) )) {
+            throw new Error("Doesn't seem to be a KrakenUniq report - required columns are not present.");
         }
 
+        const parentAtDepth = Array(100).fill("root")
+        if (opts.pavian) {
+        data.forEach(d => {
+            d.name = d.name.replace(/\|/g, "_").replace(/^._/, "");
+            //d.path = d.taxLineage.replace(/^._/, "").replace(/\|._/g, "|");
+            if (d.depth > 0) {
+                d.path = parentAtDepth[d.depth - 1] + "|" + d.name;
+            } else {
+                d.path = d.name;
+            }
+            parentAtDepth[d.depth] = d.path;
+        })
+
+        } else {
         data.forEach(d => {
             d.depth = (d.taxName.search(/\S/)) / 2;
             if (d.depth === -1)
@@ -39,12 +52,19 @@ const setData = function(data, opts) {
             }
             parentAtDepth[d.depth] = d.path;
         })
-        data = data.filter(d => d.path.startsWith("root"))
+
+        }
+        //data = data.filter(d => d.path.startsWith("root"))
         opts.pathSep = "|";
         opts.nameField = "path";
+        console.log(data)
         //opts.valueField = "reads";
         //opts.stat = "identity";
-        opts.valueField = "taxReads";
+        if (opts.pavian) {
+            opts.valueField = "taxonReads";
+        } else {
+            opts.valueField = "taxReads";
+        }
         opts.stat = "sum";
     }
     if (opts.pathSep) {
@@ -52,24 +72,38 @@ const setData = function(data, opts) {
             console.error("ERROR: pathSep and parentField cannot be used together.");
         }
 
-        /*
-                var tree_res = ["root" = {name: "root", children: [], depth: 0}];
-                data.forEach(function(d) {
-
-                  row.ancestorIds = d[opts.nameField].split("/");
-                });
-
-                root = d3.hierarchy(burrow(data));
-        */
-
-        root = d3.stratify()
-            .id(d => d[opts.nameField])
-            .parentId(d => {
+        var names = data.map(d => d[opts.nameField])
+        data.forEach(d => {
+            while (true) {
                 const pos = d[opts.nameField].lastIndexOf(opts.pathSep);
                 d.parentId = d[opts.nameField].substring(0, pos);
+                if (d.parentId !== "" && !names.includes(d.parentId)) {
+                    console.log("Adding missing node " + d.parentId)
+                    var extraNode = {};
+                    //extraNode.path = d.parentId;
+                    extraNode[opts.nameField] = d.parentId;
+                    extraNode[opts.valueField] = 0;
+                    if (opts.colorField) {
+                        extraNode[opts.colorField] = d[opts.colorField];
+                    }
+                    data.push(extraNode)
+                    names.push(d.parentId)
+                    d = extraNode
+                } else {
+                    break;
+                }
+            }
+        })
+
+        root = d3.stratify()
+            .id(d => {
+                return d[opts.nameField];
+            })
+            .parentId(d => {
+                const pos = d[opts.nameField].lastIndexOf(opts.pathSep);
                 if (opts.clipPath) {
                     if (pos < d[opts.nameField].length)
-                        d[opts.nameField] = d[opts.nameField].substr(pos + 1);
+                    d[opts.nameField] = d[opts.nameField].substr(pos + 1);
                 }
                 return d.parentId;
             })(data);
@@ -82,10 +116,14 @@ const setData = function(data, opts) {
         root = d3.hierarchy(data);
     }
 
+    if (!root.children) {
+        console.log("ERROR: Root has no children")
+        exit()
+    }
     ["nameField", "valueField"].forEach(prop => {
         if (!root.children[0].data.hasOwnProperty(opts[prop])) {
-            console.log("Data doesn't have property "+opts[prop]+"!")
             console.log(root)
+            console.log("Data doesn't have property "+opts[prop]+"!")
         }
     })
 
@@ -212,7 +250,8 @@ const defaults = {
     showNumbers: true,
     treeColors: true,
     krakenFile: false,
-    simplifyPath: true, // Remove nodes without a value, and only one child
+    pavian: false,
+    simplifyPath: false, // Remove nodes without a value, and only one child
     // Treemap options
     treemapHier: true,
     // Sunburst options
@@ -545,7 +584,13 @@ text.hidden {
         let nodes;
         let max_depth = 1;
 
-        const ranks = ['superkingdom', 'phylum', 'family', 'genus', 'species']
+        
+        var ranks;
+        if (self.opts.pavian) {
+            ranks = ['D', 'P', 'F', 'G', 'S']
+        } else {
+            const ranks = ['superkingdom', 'phylum', 'family', 'genus', 'species']
+        }
 
         const alignRanks = function(root) {
             var max_rank_depth;
@@ -1045,9 +1090,9 @@ text.hidden {
 
             text_objects.transition()
                 .duration(self.opts.transitionDuration)
-                .attr("visibility", d => {
-                    return (y_scale(d[y1]) - y_scale(d[y0]) > self.opts.minText ? null : "hidden");
-                })
+                //.attr("visibility", d => {
+                //    return (y_scale(d[y1]) - y_scale(d[y0]) > self.opts.minText ? null : "hidden");
+                //})
                 .call(set_texts, x_scale, y_scale)
 
             if (self.opts.showNumbers && self.opts.numbersOnNextLine)

@@ -109,7 +109,7 @@ hiervis <- function(data, vis = NULL, width = NULL, height = NULL, elementId = N
       stop("Specify either pathSep or parentField when supplying a data.frame!")
     }
     }
-    data = dataframeToD3(data)
+    data = jsonlite::toJSON(data, dataframe = "rows", auto_unbox = FALSE, rownames = TRUE)
   } else {
     stop("Do not know how to deal with data of class ", class(data))
   }
@@ -156,20 +156,6 @@ hiervisProxy <- function(id, session = shiny::getDefaultReactiveDomain()) {
     proxy <- list(id = id, session = session)
     class(proxy) <- "hiervisProxy"
     return(proxy)
-}
-
-#' from Dean Attali
-#' @keywords internal
-dataframeToD3 <- function(df) {
-  if (missing(df) || is.null(df)) {
-    return(list())
-  }
-  if (!is.data.frame(df)) {
-    stop("timevis: the input must be a dataframe", call. = FALSE)
-  }
-
-  row.names(df) <- NULL
-  apply(df, 1, function(row) as.list(row[!is.na(row)]))
 }
 
 
